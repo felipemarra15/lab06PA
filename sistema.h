@@ -92,7 +92,7 @@ class Sistema : public ISistema {
         ICollection* mostrarProductosDisponibles();
         int seleccionarProducto(string codigo);
         void agregarProducto(int idMesa,int idProducto, int cantidad);
-        void agregarProductoDomicilio(int idVenta, int idProducto, int cantidad);
+        void agregarProductoDomicilio(ICollection* vp, int idVenta);
         void aumentarCantProducto(int idMesa, int idProducto , int cantidad);
         void salir();
         void ingresarMesa(int idMesa);
@@ -108,12 +108,15 @@ class Sistema : public ISistema {
         void asignarMesaAMozo();
         dtProducto* informacionProducto(int codigoProducto);
         ICollection* ventasDeMozo(int idMozo);
-        dtVenta* ventaDomicilio(const string& ciCliente, const string& nombreCliente, const string& telefono, direccion* dir, bool retira, int idRepartidor, ICollection* items);
+        dtVenta* ventaDomicilio(const string& ciCliente, bool retira, int idRepartidor, ICollection* items);
         void resumenFacturacion(string fechaISO);
         void asignarMesaAMozo(int numeroMesa, int idMozo);
         Producto* buscarProducto(int codigo);
         bool productoEnVenta(int idProducto, int idMesa); // Verifica si un producto está en venta, opcionalmente en una mesa específica
         ICollection* listarVentas();
+        void listarRepartidor();
+        bool existeCliente(const string& ciCliente);
+        void mostrarInfoRepartidor(int idRepartidor);
 };
 
 

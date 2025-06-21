@@ -1,7 +1,7 @@
 #include "factura.h"
 
 // CONSTRUCTOR:
-Factura::Factura(fecha* f, hora *h, int iva){
+Factura::Factura(fecha* f, hora *h, float iva){
     this->f = f;
     this->h = h;
     this->iva = iva;
@@ -21,7 +21,7 @@ hora* Factura::getHora(){
     return this->h;
 }
 
-int Factura::getIva(){
+float Factura::getIva(){
     return this->iva;
 }
 
@@ -34,7 +34,7 @@ void Factura::setHora(hora* h){
     this->h = h;
 }
 
-void Factura::setIva(int iva){
+void Factura::setIva(float iva){
     this->iva = iva;
 }
 
