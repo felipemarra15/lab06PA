@@ -32,6 +32,7 @@
 #include "mozo.h"
 #include "repartidor.h"
 #include "domicilio.h"
+#include "local.h"
 
 using namespace std;
 
@@ -114,6 +115,8 @@ class Sistema : public ISistema {
         Producto* buscarProducto(int codigo);
         bool productoEnVenta(int idProducto, int idMesa); // Verifica si un producto está en venta, opcionalmente en una mesa específica
         ICollection* listarVentas();
+        ICollection* listarMozos();
+       ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta);
 };
 
 

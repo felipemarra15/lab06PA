@@ -9,8 +9,9 @@
 using namespace std;
 
 //Constructor
-Local::Local(int idVenta, int descuento, ICollection * ventaProducto, Factura* factura, IDictionary* mesa) : Venta(idVenta, descuento, ventaProducto, factura){
+Local::Local(int idVenta, int descuento, ICollection * ventaProducto, Factura* factura, IDictionary* mesa, Mozo* mozo) : Venta(idVenta, descuento, ventaProducto, factura){
     this->mesa = mesa;
+    this->mozo = mozo;
 }
 
 //Destructor
@@ -24,9 +25,17 @@ IDictionary* Local::getMesa() {
     return this->mesa;
 }
 
+Mozo* Local::getMozo() {
+    return this->mozo;
+}
+
 //Setters
 void Local::setMesa(IDictionary* mesa) {
     this->mesa = mesa;
+}
+
+void Local::setMozo(Mozo* mozo) {
+    this->mozo = mozo;
 }
 
 //funciones

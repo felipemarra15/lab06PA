@@ -420,17 +420,17 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     cout << "Ingrese la fecha de la venta (dd/mm/yyyy): ";
     int dia, mes, anio;
     char sep;
-    // cin >> dia >> sep >> mes >> sep >> anio;
-    dia = 10;
-    mes = 10;
-    anio = 2025;
+    cin >> dia >> sep >> mes >> sep >> anio;
+    // dia = 10;
+    // mes = 10;
+    // anio = 2025;
     fecha* f = new fecha(dia, mes, anio);
 
     cout << "Ingrese la hora de la venta (hh:mm): ";
     int hh, mm;
-    // cin >> hh >> sep >> mm;
-    hh = 12;
-    mm = 30;
+    cin >> hh >> sep >> mm;
+    // hh = 12;
+    // mm = 30;
     hora* h = new hora(hh, mm);
 
     // 4) Creo la factura
@@ -448,13 +448,28 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     }
     delete itM;
 
+    // 1) Busco al mozo en mi colección de empleados
+    Mozo* mozo = NULL;
+    IIterator* itE = empleados->getIterator();
+    while (itE->hasCurrent()) {
+        Mozo* m = dynamic_cast<Mozo*>(itE->getCurrent());
+        if (m && m->getIdMozo() == idMozo) { mozo = m; break; }
+        itE->next();
+    }
+    delete itE;
+    if (!mozo) {
+        cout << "Mozo no encontrado.\n";
+        return;
+}
+
     // 6) Creo la venta local con ID, descuento 0, lista vacía, factura y mesas
     Local* nuevaVenta = new Local(
         ++idVenta,       // post-incremento
         0.0f,            // descuento
         ventaProductos,  // colección vacía
         factura,         // factura creada
-        mesasDict        // mesas seleccionadas
+        mesasDict,       // mesas seleccionadas
+        mozo             // mozo asignado
     );
 
     // 7) Agrego la venta activa al sistema
@@ -463,7 +478,7 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
 
     // 8) Asigno la mesa al mozo
     IIterator* itEmpleados = empleados->getIterator();
-    Mozo* mozo = NULL;
+    //Mozo* mozo = NULL;
     while (itEmpleados->hasCurrent()) {
         Mozo* m = dynamic_cast<Mozo*>(itEmpleados->getCurrent());
         if (m && m->getIdMozo() == idMozo) {
@@ -1397,6 +1412,47 @@ ICollection* Sistema::listarVentas() {
     delete it;
     // Devuelves la lista de ventas
     return lista;
+}
+
+ICollection* Sistema::listarMozos() {
+    List* resultado = new List();
+    IIterator* it = empleados->getIterator();
+    while (it->hasCurrent()) {
+        Mozo* m = dynamic_cast<Mozo*>(it->getCurrent());
+        if (m) resultado->add(m);
+        it->next();
+    }
+    delete it;
+    return resultado;
+}
+
+ICollection* Sistema::ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) {
+    List* resultado = new List();
+    IIterator* it = ventas->getIterator(); // ventas históricas
+    while (it->hasCurrent()) {
+        Local* loc = dynamic_cast<Local*>(it->getCurrent());
+        if (loc && loc->getMozo()->getIdMozo() == idMozo) {
+            fecha* f = loc->getFactura()->getFecha();
+            // comprobamos desde ≤ f ≤ hasta
+            bool geDesde = 
+                (f->getAnio() > desde->getAnio())
+             || (f->getAnio() == desde->getAnio() &&
+                (f->getMes() > desde->getMes() ||
+                 (f->getMes() == desde->getMes() && f->getDia() >= desde->getDia())));
+            bool leHasta =
+                (f->getAnio() < hasta->getAnio())
+             || (f->getAnio() == hasta->getAnio() &&
+                (f->getMes() < hasta->getMes() ||
+                 (f->getMes() == hasta->getMes() && f->getDia() <= hasta->getDia())));
+            if (geDesde && leHasta) {
+                // mostramos la factura (dtLocal hereda de dtVenta)
+                resultado->add(loc->mostrarFactura());
+            }
+        }
+        it->next();
+    }
+    delete it;
+    return resultado;
 }
 // Implementación de los métodos de la clase Sistema
 // Aquí se pueden agregar más métodos según sea necesario

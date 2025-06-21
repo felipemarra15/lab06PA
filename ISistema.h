@@ -72,6 +72,8 @@ class ISistema {
         virtual bool productoEnVenta(int idProducto, int idMesa) = 0;
         virtual Producto* buscarProducto(int codigo) = 0;
         virtual ICollection* listarVentas() = 0;
+        virtual ICollection* listarMozos() = 0;
+        virtual ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) = 0;
 };
 
 
