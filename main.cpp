@@ -7,6 +7,7 @@
 #include "ISistema.h"
 #include "DataTypes/direccion.h"
 #include "DataTypes/dtProducto.h"
+#include "DataTypes/dtLocal.h"
 
 using namespace std;
 
@@ -830,6 +831,50 @@ void orden(ISistema* sis, int opcion) {
                 // 5) Mostrar la factura final
                 cout << "\n--- FACTURA FINAL ---\n";
                 sis->mostrarFactura(idMesa, idMozo);
+            } break;
+            case 10: {
+                cout << "\n*** VENTAS DE UN MOZO ***\n";
+                // 1) Mostrar lista de mozos
+                ICollection* mozos = sis->listarMozos();
+                cout << "Mozos disponibles:\n";
+                {
+                    IIterator* it = mozos->getIterator();
+                    while (it->hasCurrent()) {
+                        Mozo* m = dynamic_cast<Mozo*>(it->getCurrent());
+                        cout << "  - " << m->getIdMozo()
+                            << " | " << m->getNombre() << "\n";
+                        it->next();
+                    }
+                    delete it;
+                }
+                delete mozos;
+
+                // 2) Leer parámetros
+                int idMozo; char sep;
+                cout << "ID de mozo: "; cin >> idMozo;
+                cout << "Fecha desde (dd/mm/yyyy): ";
+                int d1,m1,y1; cin >> d1 >> sep >> m1 >> sep >> y1;
+                cout << "Fecha hasta (dd/mm/yyyy): ";
+                int d2,m2,y2; cin >> d2 >> sep >> m2 >> sep >> y2;
+
+                fecha desde(d1,m1,y1), hasta(d2,m2,y2);
+                ICollection* ventas = sis->ventasDeMozo(idMozo, &desde, &hasta);
+
+                // 3) Mostrar resultados
+                cout << "\nVentas facturadas de mozo " << idMozo
+                    << " entre " << d1<<"/"<<m1<<"/"<<y1
+                    << " y " << d2<<"/"<<m2<<"/"<<y2 << ":\n";
+                IIterator* iv = ventas->getIterator();
+                while (iv->hasCurrent()) {
+                    dtLocal* dto = dynamic_cast<dtLocal*>(iv->getCurrent());
+                    cout << "  Venta " << dto->getIdVenta()
+                        << " | Total: $"   << dto->getTotal()
+                        //<< " | Fecha: "    << dto->getFechaStr()   // o como quieras mostrarla
+                        << "\n";
+                    iv->next();
+                }
+                delete iv;
+                delete ventas;
             } break;
             case 11: {
                 informacionProducto(sis);
