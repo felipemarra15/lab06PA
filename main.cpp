@@ -10,6 +10,7 @@
 
 #include "DataTypes/direccion.h"
 #include "DataTypes/dtProducto.h"
+#include "DataTypes/dtLocal.h"
 
 using namespace std;
 
@@ -456,20 +457,31 @@ void orden(ISistema* sis, int opcion) {
                     cout << "Precio: "; 
                     cin >> precio;
 
+                    if(sis->ingresarProductoComun(codigo, nombre, precio) == 0) {
+                        cout << ">> Producto común ya existe.\n";
+                        return; // Salir si el producto ya existe
+                    }
+                    if(sis->ingresarProductoComun(codigo, nombre, precio) == 1) {
+                        // Confirmación de alta
+                        int conf;
+                        cout << "Confirmar alta de producto? (1=Sí, 2=No): "; 
+                        cin >> conf;
+                        if (conf == 1) {
+                            sis->confirmarProducto();
+                            cout << ">> Producto común dado de alta.\n";
+                        } else {
+                            sis->cancelarProducto();
+                            cout << ">> Alta de producto cancelada.\n";
+                        }
+                    }
+                    if(sis->ingresarProductoComun(codigo, nombre, precio) == 2) {
+                        cout << ">> Error al ingresar producto común.\n";
+                        return; // Salir si hubo error
+                    }
                     // ingreso preliminar
-                    sis->ingresarProductoComun(codigo, nombre, precio);
+                    //sis->ingresarProductoComun(codigo, nombre, precio);
 
                     // confirmación o cancelación
-                    int conf;
-                    cout << "Confirmar alta de producto? (1=Sí, 2=No): "; 
-                    cin >> conf;
-                    if (conf == 1) {
-                        sis->confirmarProducto();
-                        cout << ">> Producto común dado de alta.\n";
-                    } else {
-                        sis->cancelarProducto();
-                        cout << ">> Alta de producto cancelada.\n";
-                    }
                 }
                 else {
                     // —— Menú ——
@@ -555,9 +567,32 @@ void orden(ISistema* sis, int opcion) {
 
                 // Creo el objeto direccion y llamo al sistema
                 direccion* dir = new direccion(ciudad, calle, numero);
-                sis->altaCliente(ci, nombre, telefono, dir);
-                cout << "Cliente dado de alta correctamente.\n";
-
+                if(sis->altaCliente(ci, nombre, telefono, dir) == 0) {
+                    cout << ">> Cliente ya existe.\n";
+                    delete dir;  // libero la dirección
+                    return; // Salir si el cliente ya existe
+                }
+                if(sis->altaCliente(ci, nombre, telefono, dir) == 1) {
+                    // Confirmación de alta
+                    int conf;
+                    cout << "Confirmar alta de cliente? (1=Sí, 2=No): "; 
+                    cin >> conf;
+                    if (conf == 1) {
+                        sis->altaCliente(ci, nombre, telefono, dir);
+                        cout << ">> Cliente dado de alta.\n";
+                    } else {
+                        delete dir;  // libero la dirección
+                        cout << ">> Alta de cliente cancelada.\n";
+                        return; // Salir si se cancela
+                    }
+                }
+                
+                if(sis->altaCliente(ci, nombre, telefono, dir) == 2) {
+                    cout << ">> Error al ingresar cliente.\n";
+                    delete dir;  // libero la dirección
+                    return; // Salir si hubo error
+                }
+                // sis->altaCliente(ci, nombre, telefono, dir); // ingreso preliminar
                 delete dir;  // libero la dirección
             } break;
             case 3:  {   // Alta de Empleado
@@ -587,6 +622,11 @@ void orden(ISistema* sis, int opcion) {
                         cout << "Elija tipo de transporte: ";
                         cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         getline(cin, transporte);
+                        // Verificar que el transporte sea válido
+                        if (transporte != "Moto" && transporte != "moto" && transporte != "Bicicleta" && transporte != "bicicleta" && transporte != "Auto" && transporte != "auto") {
+                            cout << "Transporte inválido. Debe ser Moto, Bicicleta o Auto.\n";
+                            continue; // Vuelve a pedir el transporte
+                        }
 
                         sis->altaRepartidor(nombre, transporte);
                         cout << "Repartidor dado de alta correctamente.\n";
@@ -979,6 +1019,49 @@ void orden(ISistema* sis, int opcion) {
                     delete itI;
                     delete items;
                 }
+            case 10: {
+                cout << "\n*** VENTAS DE UN MOZO ***\n";
+                // 1) Mostrar lista de mozos
+                ICollection* mozos = sis->listarMozos();
+                cout << "Mozos disponibles:\n";
+                {
+                    IIterator* it = mozos->getIterator();
+                    while (it->hasCurrent()) {
+                        Mozo* m = dynamic_cast<Mozo*>(it->getCurrent());
+                        cout << "  - " << m->getIdMozo()
+                            << " | " << m->getNombre() << "\n";
+                        it->next();
+                    }
+                    delete it;
+                }
+                delete mozos;
+
+                // 2) Leer parámetros
+                int idMozo; char sep;
+                cout << "ID de mozo: "; cin >> idMozo;
+                cout << "Fecha desde (dd/mm/yyyy): ";
+                int d1,m1,y1; cin >> d1 >> sep >> m1 >> sep >> y1;
+                cout << "Fecha hasta (dd/mm/yyyy): ";
+                int d2,m2,y2; cin >> d2 >> sep >> m2 >> sep >> y2;
+
+                fecha desde(d1,m1,y1), hasta(d2,m2,y2);
+                ICollection* ventas = sis->ventasDeMozo(idMozo, &desde, &hasta);
+
+                // 3) Mostrar resultados
+                cout << "\nVentas facturadas de mozo " << idMozo
+                    << " entre " << d1<<"/"<<m1<<"/"<<y1
+                    << " y " << d2<<"/"<<m2<<"/"<<y2 << ":\n";
+                IIterator* iv = ventas->getIterator();
+                while (iv->hasCurrent()) {
+                    dtLocal* dto = dynamic_cast<dtLocal*>(iv->getCurrent());
+                    cout << "  Venta " << dto->getIdVenta()
+                        << " | Total: $"   << dto->getTotal()
+                        //<< " | Fecha: "    << dto->getFechaStr()   // o como quieras mostrarla
+                        << "\n";
+                    iv->next();
+                }
+                delete iv;
+                delete ventas;
             } break;
             case 11: {
                 informacionProducto(sis);

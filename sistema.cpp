@@ -54,20 +54,21 @@ bool Sistema::hayProductos() {
     return !productos->isEmpty();
 }
 
-void Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
+int Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
     if(codigo.empty() || nombre.empty() || precio <= 0) {
         cout << "Datos del producto inválidos." << endl;
-        return;
+        return 2;
     }
     
     // Verificar si el producto ya existe
     if (productos->member(new Integer(atoi(codigo.c_str())))) {
-        cout << "El producto ya existe." << endl;
-        return;
+        //cout << "El producto ya existe." << endl;
+        return 0;
     }
 
     // Crear un nuevo producto y agregarlo al diccionario
     productoComun = new dtSimple(atoi(codigo.c_str()), nombre, precio);
+    return 1;
 }
 
 void Sistema::confirmarProducto() {  // REVISAR
@@ -419,17 +420,17 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     cout << "Ingrese la fecha de la venta (dd/mm/yyyy): ";
     int dia, mes, anio;
     char sep;
-    // cin >> dia >> sep >> mes >> sep >> anio;
-    dia = 10;
-    mes = 10;
-    anio = 2025;
+    cin >> dia >> sep >> mes >> sep >> anio;
+    // dia = 10;
+    // mes = 10;
+    // anio = 2025;
     fecha* f = new fecha(dia, mes, anio);
 
     cout << "Ingrese la hora de la venta (hh:mm): ";
     int hh, mm;
-    // cin >> hh >> sep >> mm;
-    hh = 12;
-    mm = 30;
+    cin >> hh >> sep >> mm;
+    // hh = 12;
+    // mm = 30;
     hora* h = new hora(hh, mm);
 
     // 4) Creo la factura
@@ -447,13 +448,28 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     }
     delete itM;
 
+    // 1) Busco al mozo en mi colección de empleados
+    Mozo* mozo = NULL;
+    IIterator* itE = empleados->getIterator();
+    while (itE->hasCurrent()) {
+        Mozo* m = dynamic_cast<Mozo*>(itE->getCurrent());
+        if (m && m->getIdMozo() == idMozo) { mozo = m; break; }
+        itE->next();
+    }
+    delete itE;
+    if (!mozo) {
+        cout << "Mozo no encontrado.\n";
+        return;
+}
+
     // 6) Creo la venta local con ID, descuento 0, lista vacía, factura y mesas
     Local* nuevaVenta = new Local(
         ++idVenta,       // post-incremento
         0.0f,            // descuento
         ventaProductos,  // colección vacía
         factura,         // factura creada
-        mesasDict        // mesas seleccionadas
+        mesasDict,       // mesas seleccionadas
+        mozo             // mozo asignado
     );
 
     // 7) Agrego la venta activa al sistema
@@ -462,7 +478,7 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
 
     // 8) Asigno la mesa al mozo
     IIterator* itEmpleados = empleados->getIterator();
-    Mozo* mozo = NULL;
+    //Mozo* mozo = NULL;
     while (itEmpleados->hasCurrent()) {
         Mozo* m = dynamic_cast<Mozo*>(itEmpleados->getCurrent());
         if (m && m->getIdMozo() == idMozo) {
@@ -981,23 +997,29 @@ void Sistema::cancelarAccion() { // REVISAR
     cout << "Acción cancelada." << endl;
 }
 
-void Sistema::altaCliente(string ci, string nombre, string telefono, direccion* direccion){ //REVISAR
+int Sistema::altaCliente(string ci, string nombre, string telefono, direccion* direccion){ //REVISAR
     if(ci.empty() || nombre.empty() || telefono.empty() || direccion == NULL) {
-        cout << "Datos del cliente inválidos." << endl;
-        return;
+        //cout << "Datos del cliente inválidos." << endl;
+        return 2; // Retornar 2 para indicar error en los datos
     }
 
     // Verificar si el cliente ya existe
     if (clientes->member(new String(ci.c_str()))) {
-        cout << "El cliente ya existe." << endl;
-        return;
+        //cout << "El cliente ya existe." << endl;
+        return 0; // Retornar 0 para indicar que el cliente ya existe
     }
 
     // Crear un nuevo cliente y agregarlo al diccionario
     Cliente* nuevoCliente = new Cliente(ci, nombre, telefono, direccion);
     clientes->add(new String(nuevoCliente->getCi().c_str()), dynamic_cast<ICollectible*>(nuevoCliente));
+    cout << nuevoCliente->getNombre() << " ha sido agregado como cliente." << endl;
+    cout << "ID del cliente: " << nuevoCliente->getCi() << endl;
+    cout << "Nombre del cliente: " << nuevoCliente->getNombre() << endl;
+    cout << "Teléfono del cliente: " << nuevoCliente->getTelefono() << endl;
+    // cout << "Dirección del cliente: " << nuevoCliente->getDireccion()->toString() << endl;
+    return 1; // Retornar 1 para indicar que el cliente fue agregado exitosamente
 }
-
+ 
 
 void Sistema::altaMozo(string nombre){ //REVISAR
     if(nombre.empty()) {
@@ -1427,5 +1449,45 @@ void Sistema::mostrarInfoRepartidor(int idRepartidor) {
          << endl;
 }
 
+ICollection* Sistema::listarMozos() {
+    List* resultado = new List();
+    IIterator* it = empleados->getIterator();
+    while (it->hasCurrent()) {
+        Mozo* m = dynamic_cast<Mozo*>(it->getCurrent());
+        if (m) resultado->add(m);
+        it->next();
+    }
+    delete it;
+    return resultado;
+}
+
+ICollection* Sistema::ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) {
+    List* resultado = new List();
+    IIterator* it = ventas->getIterator(); // ventas históricas
+    while (it->hasCurrent()) {
+        Local* loc = dynamic_cast<Local*>(it->getCurrent());
+        if (loc && loc->getMozo()->getIdMozo() == idMozo) {
+            fecha* f = loc->getFactura()->getFecha();
+            // comprobamos desde ≤ f ≤ hasta
+            bool geDesde = 
+                (f->getAnio() > desde->getAnio())
+             || (f->getAnio() == desde->getAnio() &&
+                (f->getMes() > desde->getMes() ||
+                 (f->getMes() == desde->getMes() && f->getDia() >= desde->getDia())));
+            bool leHasta =
+                (f->getAnio() < hasta->getAnio())
+             || (f->getAnio() == hasta->getAnio() &&
+                (f->getMes() < hasta->getMes() ||
+                 (f->getMes() == hasta->getMes() && f->getDia() <= hasta->getDia())));
+            if (geDesde && leHasta) {
+                // mostramos la factura (dtLocal hereda de dtVenta)
+                resultado->add(loc->mostrarFactura());
+            }
+        }
+        it->next();
+    }
+    delete it;
+    return resultado;
+}
 // Implementación de los métodos de la clase Sistema
 // Aquí se pueden agregar más métodos según sea necesario

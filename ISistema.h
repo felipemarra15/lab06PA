@@ -23,7 +23,7 @@ class ISistema {
         virtual IDictionary* getProductos() = 0;
         virtual IDictionary* getVentas() = 0;
         virtual bool hayProductos() = 0;
-        virtual void ingresarProductoComun(string codigo, string nombre, float precio) = 0;
+        virtual int ingresarProductoComun(string codigo, string nombre, float precio) = 0;
         virtual void confirmarProducto() = 0;
         virtual void cancelarProducto() = 0; 
         virtual ICollection* listarProductosComunes() = 0;
@@ -60,7 +60,7 @@ class ISistema {
         virtual void EliminarProducto(int idVenta) = 0;
         virtual void cancelarAccion() = 0;
         //virtual void mostrarSeleccionadas() = 0;S
-        virtual void altaCliente(string ci, string nombre, string telefono, direccion* direccion) = 0;
+        virtual int altaCliente(string ci, string nombre, string telefono, direccion* direccion) = 0;
         virtual void altaMozo(string nombre) = 0;
         virtual void altaRepartidor(string nombre, string transporte) = 0;
         virtual void asignarMesaAMozo() = 0;
@@ -75,6 +75,8 @@ class ISistema {
         virtual void listarRepartidor() = 0;
         virtual bool existeCliente(const string& ciCliente) = 0; // Verifica si un cliente existe por su cédula
         virtual void mostrarInfoRepartidor(int idRepartidor) = 0;
+        virtual ICollection* listarMozos() = 0;
+        virtual ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) = 0;
 };
 
 
