@@ -54,21 +54,20 @@ bool Sistema::hayProductos() {
     return !productos->isEmpty();
 }
 
-int Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
+void Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
     if(codigo.empty() || nombre.empty() || precio <= 0) {
         cout << "Datos del producto inválidos." << endl;
-        return 2;
+        return;
     }
     
     // Verificar si el producto ya existe
     if (productos->member(new Integer(atoi(codigo.c_str())))) {
-        //cout << "El producto ya existe." << endl;
-        return 0;
+        cout << "El producto ya existe." << endl;
+        return;
     }
 
     // Crear un nuevo producto y agregarlo al diccionario
     productoComun = new dtSimple(atoi(codigo.c_str()), nombre, precio);
-    return 1;
 }
 
 void Sistema::confirmarProducto() {  // REVISAR
@@ -1002,29 +1001,23 @@ void Sistema::cancelarAccion() { // REVISAR
     cout << "Acción cancelada." << endl;
 }
 
-int Sistema::altaCliente(string ci, string nombre, string telefono, direccion* direccion){ //REVISAR
+void Sistema::altaCliente(string ci, string nombre, string telefono, direccion* direccion){ //REVISAR
     if(ci.empty() || nombre.empty() || telefono.empty() || direccion == NULL) {
-        //cout << "Datos del cliente inválidos." << endl;
-        return 2; // Retornar 2 para indicar error en los datos
+        cout << "Datos del cliente inválidos." << endl;
+        return;
     }
 
     // Verificar si el cliente ya existe
     if (clientes->member(new String(ci.c_str()))) {
-        //cout << "El cliente ya existe." << endl;
-        return 0; // Retornar 0 para indicar que el cliente ya existe
+        cout << "El cliente ya existe." << endl;
+        return;
     }
 
     // Crear un nuevo cliente y agregarlo al diccionario
     Cliente* nuevoCliente = new Cliente(ci, nombre, telefono, direccion);
     clientes->add(new String(nuevoCliente->getCi().c_str()), dynamic_cast<ICollectible*>(nuevoCliente));
-    cout << nuevoCliente->getNombre() << " ha sido agregado como cliente." << endl;
-    cout << "ID del cliente: " << nuevoCliente->getCi() << endl;
-    cout << "Nombre del cliente: " << nuevoCliente->getNombre() << endl;
-    cout << "Teléfono del cliente: " << nuevoCliente->getTelefono() << endl;
-    // cout << "Dirección del cliente: " << nuevoCliente->getDireccion()->toString() << endl;
-    return 1; // Retornar 1 para indicar que el cliente fue agregado exitosamente
 }
- 
+
 
 void Sistema::altaMozo(string nombre){ //REVISAR
     if(nombre.empty()) {
