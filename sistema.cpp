@@ -54,20 +54,21 @@ bool Sistema::hayProductos() {
     return !productos->isEmpty();
 }
 
-void Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
+int Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
     if(codigo.empty() || nombre.empty() || precio <= 0) {
         cout << "Datos del producto inválidos." << endl;
-        return;
+        return 2;
     }
     
     // Verificar si el producto ya existe
     if (productos->member(new Integer(atoi(codigo.c_str())))) {
-        cout << "El producto ya existe." << endl;
-        return;
+        //cout << "El producto ya existe." << endl;
+        return 0;
     }
 
     // Crear un nuevo producto y agregarlo al diccionario
     productoComun = new dtSimple(atoi(codigo.c_str()), nombre, precio);
+    return 1;
 }
 
 void Sistema::confirmarProducto() {  // REVISAR

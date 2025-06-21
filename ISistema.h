@@ -23,7 +23,7 @@ class ISistema {
         virtual IDictionary* getProductos() = 0;
         virtual IDictionary* getVentas() = 0;
         virtual bool hayProductos() = 0;
-        virtual void ingresarProductoComun(string codigo, string nombre, float precio) = 0;
+        virtual int ingresarProductoComun(string codigo, string nombre, float precio) = 0;
         virtual void confirmarProducto() = 0;
         virtual void cancelarProducto() = 0; 
         virtual ICollection* listarProductosComunes() = 0;

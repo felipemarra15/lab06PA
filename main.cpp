@@ -453,20 +453,31 @@ void orden(ISistema* sis, int opcion) {
                     cout << "Precio: "; 
                     cin >> precio;
 
+                    if(sis->ingresarProductoComun(codigo, nombre, precio) == 0) {
+                        cout << ">> Producto común ya existe.\n";
+                        return; // Salir si el producto ya existe
+                    }
+                    if(sis->ingresarProductoComun(codigo, nombre, precio) == 1) {
+                        // Confirmación de alta
+                        int conf;
+                        cout << "Confirmar alta de producto? (1=Sí, 2=No): "; 
+                        cin >> conf;
+                        if (conf == 1) {
+                            sis->confirmarProducto();
+                            cout << ">> Producto común dado de alta.\n";
+                        } else {
+                            sis->cancelarProducto();
+                            cout << ">> Alta de producto cancelada.\n";
+                        }
+                    }
+                    if(sis->ingresarProductoComun(codigo, nombre, precio) == 2) {
+                        cout << ">> Error al ingresar producto común.\n";
+                        return; // Salir si hubo error
+                    }
                     // ingreso preliminar
-                    sis->ingresarProductoComun(codigo, nombre, precio);
+                    //sis->ingresarProductoComun(codigo, nombre, precio);
 
                     // confirmación o cancelación
-                    int conf;
-                    cout << "Confirmar alta de producto? (1=Sí, 2=No): "; 
-                    cin >> conf;
-                    if (conf == 1) {
-                        sis->confirmarProducto();
-                        cout << ">> Producto común dado de alta.\n";
-                    } else {
-                        sis->cancelarProducto();
-                        cout << ">> Alta de producto cancelada.\n";
-                    }
                 }
                 else {
                     // —— Menú ——

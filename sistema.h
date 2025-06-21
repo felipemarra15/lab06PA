@@ -65,7 +65,7 @@ class Sistema : public ISistema {
         IDictionary* getMesas();
         IDictionary* getVentas();
         bool hayProductos();
-        void ingresarProductoComun(string codigo, string nombre, float precio);
+        int ingresarProductoComun(string codigo, string nombre, float precio);
         void confirmarProducto();
         void cancelarProducto();
         ICollection* listarProductosComunes();
