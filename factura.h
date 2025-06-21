@@ -11,15 +11,15 @@ class Factura {
 private:
     fecha* f;
     hora* h;
-    int iva;
+    float iva;
 public:
-    Factura(fecha *f, hora *h, int iva);
+    Factura(fecha *f, hora *h, float iva);
     ~Factura();
     fecha* getFecha();
     hora* getHora();
-    int getIva();
+    float getIva();
     void setFecha(fecha* f);
     void setHora(hora* h);
-    void setIva(int iva);
+    void setIva(float iva);
 };
 #endif // FACTURA_H

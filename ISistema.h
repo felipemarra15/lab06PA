@@ -50,7 +50,7 @@ class ISistema {
         virtual ICollection* mostrarProductosDisponibles() = 0;
         //virtual void seleccionarProducto(int codigo,int cantidad) = 0;
         virtual void agregarProducto(int idMesa,int idProducto, int cantidad) = 0;
-        virtual void agregarProductoDomicilio(int idVenta, int idProducto, int cantidad) = 0;
+        virtual void agregarProductoDomicilio(ICollection* vp, int idVenta) = 0;
         virtual void aumentarCantProducto(int idMesa, int idProducto , int cantidad) = 0;
         virtual void salir() = 0;
         virtual void mostrarConfirmacion() = 0;
@@ -60,18 +60,21 @@ class ISistema {
         virtual void EliminarProducto(int idVenta) = 0;
         virtual void cancelarAccion() = 0;
         //virtual void mostrarSeleccionadas() = 0;S
-        virtual void altaCliente(string ci, string nombre, string telefono, direccion* direccion) = 0;
+        virtual int altaCliente(string ci, string nombre, string telefono, direccion* direccion) = 0;
         virtual void altaMozo(string nombre) = 0;
         virtual void altaRepartidor(string nombre, string transporte) = 0;
         virtual void asignarMesaAMozo() = 0;
         virtual dtProducto* informacionProducto(int codigoProducto) = 0;
         virtual ICollection* ventasDeMozo(int idMozo) = 0;
-        virtual dtVenta* ventaDomicilio(const string& ciCliente, const string& nombreCliente, const string& telefono, direccion* dir, bool retira, int idRepartidor, ICollection* items) = 0;
+        virtual dtVenta* ventaDomicilio(const string& ciCliente, bool retira, int idRepartidor, ICollection* items) = 0;
         virtual void resumenFacturacion(string fechaISO) = 0;
         virtual void asignarMesaAMozo(int numeroMesa, int idMozo) = 0;
         virtual bool productoEnVenta(int idProducto, int idMesa) = 0;
         virtual Producto* buscarProducto(int codigo) = 0;
         virtual ICollection* listarVentas() = 0;
+        virtual void listarRepartidor() = 0;
+        virtual bool existeCliente(const string& ciCliente) = 0; // Verifica si un cliente existe por su cédula
+        virtual void mostrarInfoRepartidor(int idRepartidor) = 0;
         virtual ICollection* listarMozos() = 0;
         virtual ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) = 0;
 };
