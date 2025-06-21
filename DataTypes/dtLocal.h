@@ -13,10 +13,12 @@ using namespace std;
 class dtLocal : public dtVenta {
     private:
         IDictionary* mesa;
+        float total; 
     public:
         dtLocal(int idVenta, int descuento, ICollection* ventaProducto, Factura * factura, IDictionary* mesa);
         ~dtLocal();
         IDictionary* getMesa();
+        float getTotal();
 };
 
 #endif //DTLOCAL_H

@@ -32,6 +32,7 @@
 #include "mozo.h"
 #include "repartidor.h"
 #include "domicilio.h"
+#include "local.h"
 
 #include <typeinfo>
 #include <iomanip> // Para std::setprecision
@@ -96,7 +97,7 @@ class Sistema : public ISistema {
         ICollection* mostrarProductosDisponibles();
         int seleccionarProducto(string codigo);
         void agregarProducto(int idMesa,int idProducto, int cantidad);
-        void agregarProductoDomicilio(int idVenta, int idProducto, int cantidad);
+        void agregarProductoDomicilio(ICollection* vp, int idVenta);
         void aumentarCantProducto(int idMesa, int idProducto , int cantidad);
         void salir();
         void ingresarMesa(int idMesa);
@@ -112,7 +113,7 @@ class Sistema : public ISistema {
         void asignarMesaAMozo();
         dtProducto* informacionProducto(int codigoProducto);
         ICollection* ventasDeMozo(int idMozo);
-        dtVenta* ventaDomicilio(const string& ciCliente, const string& nombreCliente, const string& telefono, direccion* dir, bool retira, int idRepartidor, ICollection* items);
+        dtVenta* ventaDomicilio(const string& ciCliente, bool retira, int idRepartidor, ICollection* items);
         void resumenFacturacion(string fechaISO);
         void asignarMesaAMozo(int numeroMesa, int idMozo);
         Producto* buscarProducto(int codigo);
@@ -123,6 +124,11 @@ class Sistema : public ISistema {
         ICollection* obtenerDatosFacturacion();
         ICollection* obtenerDatosVentaDomicilio();
         void mostrarInforme(ICollection* ventas, float total);
+        void listarRepartidor();
+        bool existeCliente(const string& ciCliente);
+        void mostrarInfoRepartidor(int idRepartidor);
+        ICollection* listarMozos();
+       ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta);
 };
 
 

@@ -3,12 +3,18 @@
 #include <sstream>
 #include <cstdlib>
 #include <limits>
+#include <iomanip>
+
 #include "factory.h"
 #include "ISistema.h"
+
 #include "DataTypes/direccion.h"
 #include "DataTypes/dtProducto.h"
+#include "DataTypes/dtLocal.h"
 
 using namespace std;
+
+ICollection* cuentas;
 
 void cargarDatosPrueba(ISistema* sis) {
     // --- Productos comunes iniciales
@@ -78,6 +84,7 @@ void cargarDatosPrueba(ISistema* sis) {
     // sis->agregarProducto(3, 103, 1);
     // sis->agregarProducto(3, 109, 1);
     // sis->finalizarVenta(3);
+
     
     cout << ">> Datos de prueba cargados.\n\n";
 }
@@ -532,8 +539,17 @@ void orden(ISistema* sis, int opcion) {
                         // 3) ¿Sigo agregando?
                         int opc;
                         cout << "¿Agregar otro producto al menú? (1=Sí, 0=No): ";
-                        cin >> opc;
-                        agregar = (opc == 1);
+                        if (!(cin >> opc)) {
+                            // hubo un error al leer (por ej. letra en vez de número)
+                            cin.clear(); 
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                            cout << "Entrada inválida, asumo que no y salgo.\n";
+                            agregar = false;
+                        } else {
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                            if (opc == 1) agregar = true;
+                            else agregar = false;
+                        }
                     }
 
                     // confirmo o cancel o del menú
@@ -551,6 +567,7 @@ void orden(ISistema* sis, int opcion) {
                         cout << ">> Alta de menú cancelada.\n";
                     }
                     delete prodsTemp; // Liberar memoria de la colección temporal
+                    return;
                 }
             } break;
             case 2: {
@@ -744,9 +761,11 @@ void orden(ISistema* sis, int opcion) {
                     IIterator* it = disponibles->getIterator();
                     while (it->hasCurrent()) {
                         dtProducto* p = dynamic_cast<dtProducto*>(it->getCurrent());
-                        cout << "  - Código: " << p->getCodigo()
-                            << " | " << p->getNombre()
-                            << " ($" << p->getPrecio() << ")\n";
+                        if (p) {
+                            cout << "  - Código: " << p->getCodigo()
+                                << " | " << p->getNombre()
+                                << " ($" << p->getPrecio() << ")\n";
+                        }
                         it->next();
                     }
                     delete it;
@@ -805,6 +824,74 @@ void orden(ISistema* sis, int opcion) {
                     cout << ">> Venta pendiente. Puede seguir agregando productos más tarde.\n";
                 }
             } break;
+            case 7: {   // “Quitar producto a una venta”
+                cout << "\n*** QUITAR PRODUCTO A UNA VENTA ***\n";
+
+                // 1) Pedir y validar mesa
+                int idMesa;
+                cout << "ID de la mesa con venta activa: ";
+                cin >> idMesa;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                sis->ingresarMesa(idMesa);
+
+                // 2) Mostrar productos en la venta
+                ICollection* enVenta = sis->mostrarProductosEnVenta();
+                cout << "\nProductos en la venta de la mesa " << idMesa << ":\n";
+                {
+                    IIterator* it = enVenta->getIterator();
+                    while (it->hasCurrent()) {
+                        dtVentaProducto* vp = dynamic_cast<dtVentaProducto*>(it->getCurrent());
+                        if (vp) {
+                            cout << "  - Código: "  << vp->getProducto()->getCodigo()
+                                << " | Nombre: "   << vp->getProducto()->getNombre()
+                                << " | Cantidad: " << vp->getCantidad()
+                                << "\n";
+                        }
+                        it->next();
+                    }
+                    delete it;
+                }
+                delete enVenta;
+
+                // 3) Bucle para seguir quitando
+                bool seguir = true;
+                while (seguir) {
+                    string codigoStr;
+                    int    cantidad;
+
+                    cout << "\nCódigo de producto a quitar: ";
+                    getline(cin, codigoStr);
+                    cout << "Cantidad a quitar: ";
+                    cin >> cantidad;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    // almaceno la selección en el sistema
+                    sis->SeleccionarProductoYCantidad(codigoStr, cantidad);
+
+                    // confirmo o cancelo esta eliminación
+                    int conf;
+                    cout << "¿Confirmar eliminación? (1=Sí, 0=No): ";
+                    cin >> conf;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    if (conf == 1) {
+                        // sin parámetros: usa lo que guardó seleccionarProductoYCantidad()
+                        sis->eliminarProducto();
+                        cout << ">> Producto eliminado de la venta.\n";
+                    } else {
+                        sis->cancelarAccion();
+                        cout << ">> Operación cancelada para este producto.\n";
+                    }
+
+                    // ¿otra vez?
+                    cout << "¿Quitar otro producto? (1=Sí, 0=No): ";
+                    cin >> conf;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    seguir = (conf == 1);
+                }
+
+                cout << "\n>> Fin del caso “Quitar producto a una venta”.\n\n";
+            } break;
             case 8: {
                 cout << "\n*** FACTURACIÓN DE UNA VENTA ***\n";
 
@@ -846,6 +933,235 @@ void orden(ISistema* sis, int opcion) {
                 // 5) Mostrar la factura final
                 cout << "\n--- FACTURA FINAL ---\n";
                 sis->mostrarFactura(idMesa, idMozo);
+            } break;
+            case 9: {
+                cout << "\n*** VENTA A DOMICILIO ***\n";
+
+                // 1) Pedir teléfono del cliente y datos (si no existe, altaCliente detectará y registrará)
+                string ci, nombre, telefono;
+                cout << "Cedula del cliente: ";
+                cin >> ci;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                if(!sis->existeCliente(ci)){
+                    cout << "El cliente no esta registrado \n";
+                    cout << "Nombre del cliente: ";
+                    getline(cin, nombre);
+
+                    cout << "Teléfono de contacto (repetir): ";
+                    getline(cin, telefono);
+
+                    // Dirección
+                    string ciudad, calle, numero;
+                    cout << "Ciudad: ";
+                    getline(cin, ciudad);
+                    cout << "Calle: ";
+                    getline(cin, calle);
+                    cout << "Número: ";
+                    getline(cin, numero);
+
+                    direccion* dir = new direccion(ciudad, calle, numero);
+                    sis->altaCliente(ci, nombre, telefono, dir);
+
+                    delete dir;  // Liberar memoria de la dirección
+                }
+
+                // 2) Bucle de agregación de productos
+                ICollection* items = new List();
+                char seguirProd = 's';
+                while (seguirProd=='s' || seguirProd=='S') {
+                    // Mostrar catálogo
+                    ICollection* cat = sis->listarProductos();
+                    cout << "\nProductos disponibles:\n";
+                    {
+                        IIterator* it = cat->getIterator();
+                        while (it->hasCurrent()) {
+                            dtProducto* p = dynamic_cast<dtProducto*>(it->getCurrent());
+                            cout << "  - Código: " << p->getCodigo()
+                                << " | " << p->getNombre()
+                                << " ($" << p->getPrecio() << ")\n";
+                            it->next();
+                        }
+                        delete it;
+                    }
+                    delete cat;
+
+                    int cod, cant;
+                    cout << "\nCódigo de producto a agregar: ";
+                    cin >> cod;
+                    cout << "Cantidad: ";
+                    cin >> cant;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    // Construyo el dtProducto de línea y lo guardo
+                    dtProducto* dtp = sis->informacionProducto(cod);
+                    if (dtp) {
+                        dtVentaProducto* vp = new dtVentaProducto(dtp, cant);
+                        items->add(vp);
+                        cout << "  → Agregado " << cant << "×" << dtp->getNombre() << "\n";
+                    } else {
+                        cout << "  !! Producto no encontrado, se omite.\n";
+                    }
+
+                    cout << "¿Agregar otro producto? (s/n): ";
+                    cin >> seguirProd;
+                    // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+
+                // 3) Seleccionar repartidor
+                char requiereEntrega;
+                cout << "\n¿Pedido a domicilio? (s/n): ";
+                cin >> requiereEntrega;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                bool s = false;
+                int idRepartidor = 0;
+                if (requiereEntrega=='s' || requiereEntrega=='S') {
+                    s = true;
+                    cout << "\nRepartidores disponibles:\n";
+                    sis->listarRepartidor();
+                    cout << "\nSeleccione el ID del repartidor: ";
+                    cin >> idRepartidor;
+                }
+
+                // 4) Confirmar o cancelar todo el pedido
+                char conf;
+                cout << "\nConfirmar pedido a domicilio? (s/n): ";
+                cin >> conf;
+                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                if (conf=='s' || conf=='S') {
+                    // 5) Llamo a la función de negocio
+
+                    dtVenta* factura = sis->ventaDomicilio(
+                        ci,             // ciCliente
+                        (requiereEntrega=='s'), // retira = false → true si requiere entrega
+                        idRepartidor,   // idRepartidor
+                        items           // items seleccionados
+                    );
+
+                    // 6) Imprimo la factura devuelta por el sistema
+                    if (factura) {
+                        // ID y fecha/hora
+                        cout << "\n--- FACTURA A DOMICILIO ---\n";
+                        cout << "ID Venta: " << factura->getIdVenta() << "\n";
+                        cout << "Fecha : " << factura->getFactura()->getFecha()->getDia() << "/"
+                            << factura->getFactura()->getFecha()->getMes() << "/"
+                            << factura->getFactura()->getFecha()->getAnio() << "\n"
+                        << "Hora : " << factura->getFactura()->getHora()->getOra() << ":"
+                        << factura->getFactura()->getHora()->getMinuto() << "\n";
+                        if(s){
+                            cout << "Repartidor ";
+                            sis->mostrarInfoRepartidor(idRepartidor);
+                        }
+                        // Detalle de líneas
+                        cout << left
+                            << setw(20) << "Producto"
+                            << setw(8)  << "Cant."
+                            << setw(10) << "Precio"
+                            << setw(10) << "Total\n";
+                        cout << string(50,'-') << "\n";
+                        IIterator* itF = items->getIterator();
+                        double sub = 0;
+                        
+                        while (itF->hasCurrent()) {
+                            dtVentaProducto* vp = dynamic_cast<dtVentaProducto*>(itF->getCurrent());
+                            double pu = vp->getProducto()->getPrecio();
+                            int    ct = vp->getCantidad();
+                            double tl = pu * ct;
+                            sub += tl;
+                            cout << left
+                                << setw(20) << vp->getProducto()->getNombre()
+                                << setw(8)  << ct
+                                << "$"      << setw(8) << fixed << setprecision(2) << pu
+                                << "$"      << setw(8) << fixed << setprecision(2) << tl
+                                << "\n";
+                            itF->next();
+                        }
+                        delete itF;
+
+                        // Totales
+                        float descuento = factura->getDescuento();
+                        float total = sub * (1 - descuento / 100.0);
+                        float totalIVA = total * (1 + (factura->getFactura()->getIva() / 100));
+                        cout << string(50,'-') << "\n"
+                            << "Subtotal:    $" << fixed << setprecision(2) << sub << "\n"
+                            << "Descuento:   "    << descuento << "%\n"
+                            << "Total:       $" << fixed << setprecision(2) << total << "\n"
+                            << "Total + IVA: $" << fixed << setprecision(2) << totalIVA << "\n\n";
+                        cout << "Gracias por su compra!\n";
+
+                        IIterator* item = items->getIterator();
+                        while (item->hasCurrent()) {
+                            delete item->getCurrent();
+                            item->next();
+                        }
+                        delete item;
+                        delete items; // Liberar la colección de productos
+                        delete factura;
+                    } else {
+                        cout << "Error al generar la factura.\n";
+                    }
+                } else {
+                    // cancelar y liberar
+                    sis->cancelarAccion();
+                    cout << "\nPedido cancelado.\n";
+                }
+
+                // Si no confirmamos, Items y Dir deben liberarse:
+                if (!(conf=='s' || conf=='S')) {
+                    IIterator* itI = items->getIterator();
+                    while (itI->hasCurrent()) {
+                        delete itI->getCurrent();
+                        itI->next();
+                    }
+                    delete itI;
+                    delete items;
+                } 
+            }break;
+            case 10: {
+                cout << "\n*** VENTAS DE UN MOZO ***\n";
+                // 1) Mostrar lista de mozos
+                ICollection* mozos = sis->listarMozos();
+                cout << "Mozos disponibles:\n";
+                {
+                    IIterator* it = mozos->getIterator();
+                    while (it->hasCurrent()) {
+                        Mozo* m = dynamic_cast<Mozo*>(it->getCurrent());
+                        cout << "  - " << m->getIdMozo()
+                            << " | " << m->getNombre() << "\n";
+                        it->next();
+                    }
+                    delete it;
+                }
+                delete mozos;
+
+                // 2) Leer parámetros
+                int idMozo; char sep;
+                cout << "ID de mozo: "; cin >> idMozo;
+                cout << "Fecha desde (dd/mm/yyyy): ";
+                int d1,m1,y1; cin >> d1 >> sep >> m1 >> sep >> y1;
+                cout << "Fecha hasta (dd/mm/yyyy): ";
+                int d2,m2,y2; cin >> d2 >> sep >> m2 >> sep >> y2;
+
+                fecha desde(d1,m1,y1), hasta(d2,m2,y2);
+                ICollection* ventas = sis->ventasDeMozo(idMozo, &desde, &hasta);
+
+                // 3) Mostrar resultados
+                cout << "\nVentas facturadas de mozo " << idMozo
+                    << " entre " << d1<<"/"<<m1<<"/"<<y1
+                    << " y " << d2<<"/"<<m2<<"/"<<y2 << ":\n";
+                IIterator* iv = ventas->getIterator();
+                while (iv->hasCurrent()) {
+                    dtLocal* dto = dynamic_cast<dtLocal*>(iv->getCurrent());
+                    cout << "  Venta " << dto->getIdVenta()
+                        << " | Total: $"   << dto->getTotal()
+                        //<< " | Fecha: "    << dto->getFechaStr()   // o como quieras mostrarla
+                        << "\n";
+                    iv->next();
+                }
+                delete iv;
+                delete ventas;
             } break;
             case 11: {
                 informacionProducto(sis);
@@ -1006,41 +1322,73 @@ void orden(ISistema* sis, int opcion) {
                     //cout << ">> Baja de producto cancelada.\n";
                 }
             } break;
-            
-
         }
+    }
+
+int registro(){
+    cout << "===== REGISTRO =====\n";
+    cout << "Cotrreo electrónico: ";
+    string email;
+    cin >> email;
+    cout << "Contraseña: ";
+    string password;
+    cin >> password;
+    if(email == "a@a" && password == "123"){
+        return 1; // Admin
+    }else if (email == "m@m" && password == "123"){ 
+        return 2; // Mozo
+    } else {
+        return 0;
+    }
+    
 }
 
 int main() {
     ISistema* sis = factory::getSistema();
     int opcion;
     cargarDatosPrueba(sis); // Cargar datos de prueba al inicio
+
+    int validacion = registro();
     
 
     do {
         cout << "===== MENÚ PRINCIPAL =====\n";
-        cout << "1) Alta Producto\n";   //Completo
-        cout << "2) Alta Cliente\n";    //Completo
-        cout << "3) Alta Empleado\n";   //Completo
-        cout << "4) Asignar mesas a mozos\n";   //ANDA SI NO TIENE VENTAS ACTIVAS PRECARGADAS
-        cout << "5) Iniciar venta en mesas\n";  //Revisar
-        cout << "6) Agregar producto a una venta\n"; //GOD
-        cout << "7) Quitar producto de una venta\n";
-        cout << "8) Facturacion de una venta\n"; //Completo
-        cout << "9) Venta domicilio\n"; //CHIZITO
-        cout << "10) Ventas de un mozo\n";
-        cout << "11) Información de un producto\n"; //ANDA
-        cout << "12) Resumen de facturación de un dia\n";
-        cout << "13) Baja de producto\n";   //Completo
+        cout << "1) Alta Producto [ADMIN]\n";   //Completo
+        cout << "2) Alta Cliente [ADMIN]\n";    //Completo
+        cout << "3) Alta Empleado [ADMIN]\n";   //Completo
+        cout << "4) Asignar mesas a mozos [ADMIN]\n";   //ANDA SI NO TIENE VENTAS ACTIVAS PRECARGADAS
+        cout << "5) Iniciar venta en mesas [Mozo]\n";  //Revisar
+        cout << "6) Agregar producto a una venta [Mozo]\n"; //GOD
+        cout << "7) Quitar producto de una venta [Mozo]\n"; //JOACO
+        cout << "8) Facturacion de una venta [Mozo]\n"; //Completo
+        cout << "9) Venta domicilio [ADMIN]\n"; //TESTEAR
+        cout << "10) Ventas de un mozo [ADMIN]\n"; //ANDA
+        cout << "11) Información de un producto [ADMIN]\n"; //ANDA
+        cout << "12) Resumen de facturación de un dia [ADMIN]\n"; //Cristian
+        cout << "13) Baja de producto [ADMIN]\n";   //Completo
         cout << "0) Salir\n";
         cout << ">>> "; cin >> opcion;
         
+        bool s = false;
+
         if (opcion < 0 || opcion > 13) {
             cout << "Opción inválida. Intente nuevamente.\n";
             continue;
-        }
+        } else if (opcion == 0) {
+            cout << "Saliendo del sistema...\n";
+            break;
+        } else if (validacion = 1 && (opcion == 1 || opcion == 2 || opcion == 3 || opcion == 4 || opcion == 9 || opcion == 10 || opcion == 11 || opcion == 12 || opcion == 13)){
+            s = true; // Admin tiene permisos para estas opciones
+        } else if (validacion == 2 && (opcion == 5 || opcion == 6 || opcion == 7 || opcion == 8)){
+            s = true;
+        } else {
 
-        orden(sis, opcion);
+        }
+        
+        if(s)
+            orden(sis, opcion);
+        else
+            cout << "No tiene permisos para realizar esta acción.\n";
 
     } while(opcion != 0);
     return 0;

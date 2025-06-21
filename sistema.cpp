@@ -48,7 +48,7 @@ IDictionary* Sistema::getMesas() {
     return mesas;
 }
 IDictionary* Sistema::getVentas() {
-    return ventasActivas;
+    return ventas;
 }
 
 // Métodos de la clase Sistema
@@ -229,7 +229,7 @@ void Sistema::eliminarProducto() { // REVISAR
                     cout << "El producto no puede ser eliminado porque está en uso en una venta activa." << endl;
                     delete key; // Liberar memoria del key
                     delete itVP; // Liberar memoria del iterador de productos en la venta
-                    delete vp;
+                    //delete vp;
                     delete itVA; // Liberar memoria del iterador de ventas activas
                     return;
                 }
@@ -450,13 +450,28 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     }
     delete itM;
 
+    // 1) Busco al mozo en mi colección de empleados
+    Mozo* mozo = NULL;
+    IIterator* itE = empleados->getIterator();
+    while (itE->hasCurrent()) {
+        Mozo* m = dynamic_cast<Mozo*>(itE->getCurrent());
+        if (m && m->getIdMozo() == idMozo) { mozo = m; break; }
+        itE->next();
+    }
+    delete itE;
+    if (!mozo) {
+        cout << "Mozo no encontrado.\n";
+        return;
+}
+
     // 6) Creo la venta local con ID, descuento 0, lista vacía, factura y mesas
     Local* nuevaVenta = new Local(
         ++idVenta,       // post-incremento
         0.0f,            // descuento
         ventaProductos,  // colección vacía
         factura,         // factura creada
-        mesasDict        // mesas seleccionadas
+        mesasDict,       // mesas seleccionadas
+        mozo             // mozo asignado
     );
 
     // 7) Agrego la venta activa al sistema
@@ -465,7 +480,7 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
 
     // 8) Asigno la mesa al mozo
     IIterator* itEmpleados = empleados->getIterator();
-    Mozo* mozo = NULL;
+    //Mozo* mozo = NULL;
     while (itEmpleados->hasCurrent()) {
         Mozo* m = dynamic_cast<Mozo*>(itEmpleados->getCurrent());
         if (m && m->getIdMozo() == idMozo) {
@@ -763,55 +778,23 @@ void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
     codigoProductoSeleccionado = 0; // Reiniciar el código del producto seleccionado
 }
 
-void Sistema::agregarProductoDomicilio(int idVenta, int idProducto, int cantidad) {
+void Sistema::agregarProductoDomicilio(ICollection* vp, int idVenta) {
     // 1) Buscar el Producto en el diccionario
-    Integer* claveProd = new Integer(idProducto);
-    Producto* p = dynamic_cast<Producto*>( productos->find(claveProd) );
-    delete claveProd;
 
-    if (p == NULL) {
-        cout << "[ERROR] Producto con ID " << idProducto << " no encontrado." << endl;
-        return;
-    }
-
-    cout << "Producto encontrado: " << p->getNombre() << endl;
-
-    // 2) Recorrer todas las ventas activas hasta encontrar la venta domicilio
-    IIterator* it = ventasActivas->getIterator();
-    bool ok = false;
-
-    while (it->hasCurrent() && !ok) {
-        Venta* venta = dynamic_cast<Venta*>( it->getCurrent() );
-
-        // 2.1) Comparar por ID
-        if (venta != NULL && venta->getIdVenta() == idVenta) {
-            // 3) Encontré la venta domicilio correcta
-            Domicilio* dom = dynamic_cast<Domicilio*>(venta);
-            if (dom != NULL) {
-                // 4.1) Crear el ventaProducto con validación garantizada
-                ventaProducto* vp = new ventaProducto(cantidad, p);
-
-                // 4.2) Agregar a la colección
-                ICollection* productosVenta = dom->getVentaProductos();
-                productosVenta->add(vp);
-
-                // Debug: confirmar agregado
-                cout << "[DEBUG] Producto agregado a venta a domicilio ID " << idVenta << endl;
-
-                ok = true;
-            }
-        }
-
+    Venta* v = dynamic_cast<Venta*>(ventas->find(new Integer(idVenta)));
+    IIterator* it = vp->getIterator();
+    ICollection* productosVenta = new List(); // Colección de productos de la venta
+    
+    while(it->hasCurrent()){
+        dtVentaProducto* dtProd = dynamic_cast<dtVentaProducto*>(it->getCurrent());
+        Producto* p = dynamic_cast<Producto*>(productos->find(new Integer(dtProd->getProducto()->getCodigo())));
+        productosVenta->add(new ventaProducto(dtProd->getCantidad(), p ));
         it->next();
     }
 
     delete it;
 
-    // Limpieza adicional (si la usás en tu flujo)
-    if (productoTemporal != NULL) {
-        delete productoTemporal;
-        productoTemporal = NULL;
-    }
+    v->setVentaProductos(productosVenta); // Asignar la colección de productos a la venta
 }
 
 
@@ -1225,28 +1208,30 @@ ICollection* Sistema::ventasDeMozo(int idMozo) {
     return listaVentas;
 }
 
-dtVenta* Sistema::ventaDomicilio(const string& ciCliente, const string& nombreCliente, const string& telefono, direccion* dir, bool retira, int idRepartidor, ICollection* items) {
+dtVenta* Sistema::ventaDomicilio(const string& ciCliente, bool retira, int idRepartidor, ICollection* items) {
     // 1) Cliente: lo busco o creo
     ICollectible* colC = clientes->find(new String(ciCliente.c_str()));
+    if(colC == NULL) {
+        cout << "Error: Cliente " << ciCliente << " no encontrado." << endl;
+        return NULL; // o podrías crear un nuevo cliente aquí
+    }
     Cliente* cli;
-    if (colC == NULL) {
-        cli = new Cliente(ciCliente, nombreCliente, telefono, dir);
-        clientes->add(new String(ciCliente.c_str()), cli);
-    } else {
-        cli = dynamic_cast<Cliente*>(colC);
+    
+    cli = dynamic_cast<Cliente*>(colC);
+    bool repa = idRepartidor > 0; // si es positivo, hay repartidor
+    Repartidor* rep = NULL;
+    if(rep){
+        ICollectible* colR = empleados->find(new Integer(idRepartidor));
+        if (colR == NULL) {
+            cout << "Error: Repartidor " << idRepartidor << " no existe." << endl;
+            return NULL;
+        }
+        rep = dynamic_cast<Repartidor*>(colR);
     }
 
-    // 2) Repartidor
-    ICollectible* colR = empleados->find(new Integer(idRepartidor));
-    if (colR == NULL) {
-        cout << "Error: Repartidor " << idRepartidor << " no existe." << endl;
-        return NULL;
-    }
-    Repartidor* rep = dynamic_cast<Repartidor*>(colR);
 
     // 3) Armo la venta
-    int nuevoId = ventas->getSize() + 1;
-    ICollection* ventaProd = new List();  // colección de ventaProducto
+    int nuevoId = ++idVenta;
 
     // 3.1) Pido fecha y hora
     cout << "Ingrese la fecha de la venta (dd/mm/yyyy): ";
@@ -1260,22 +1245,30 @@ dtVenta* Sistema::ventaDomicilio(const string& ciCliente, const string& nombreCl
     cin >> hh >> sep >> mm;
     hora* h = new hora(hh, mm);
 
-    Factura* fact = new Factura(f, h, 22);  // IVA 22%
-    Domicilio* dom = new Domicilio(nuevoId, 0, retira, ventaProd, fact, cli, rep);
-    dom->setCliente(cli);
-    // agrego cada ítem
+    Domicilio* dom = NULL; // Inicializo el puntero a Domicilio
+
     IIterator* it = items->getIterator();
-    while (it->hasCurrent()) {
-        dtVentaProducto* dtIt = dynamic_cast<dtVentaProducto*>(it->getCurrent());
-        agregarProductoDomicilio(dom->getIdVenta(), dtIt->getProducto()->getCodigo(), dtIt->getCantidad());
+    ICollection* productosVenta = new List(); // Colección de productos de la venta
+
+    while(it->hasCurrent()){
+        dtVentaProducto* dtProd = dynamic_cast<dtVentaProducto*>(it->getCurrent());
+        Producto* p = dynamic_cast<Producto*>(productos->find(new Integer(dtProd->getProducto()->getCodigo())));
+        productosVenta->add(new ventaProducto(dtProd->getCantidad(), p ));
         it->next();
     }
-    delete it;
+
+    Factura* fact = new Factura(f, h, 22);  // IVA 22%
+    if(repa == false)
+        dom = new Domicilio(nuevoId, 0, retira, productosVenta, fact, cli);
+    else 
+        dom = new Domicilio(nuevoId, 0, retira, productosVenta, fact, cli, rep);
+
+    ventas->add(new Integer(nuevoId), dom); // Agrego la venta al diccionario de ventas
+
+    agregarProductoDomicilio(items, dom->getIdVenta());
 
     // 4) Finalizo
     //dom->calcularTotal();
-    ventas->add(new Integer(nuevoId), dynamic_cast<ICollectible*>(dom));
-
     return dom->mostrarFactura();  // dtDomicilio* apuntado como dtVenta*
 }
 
@@ -1355,44 +1348,39 @@ void Sistema::asignarMesaAMozo(int numeroMesa, int idMozo) {
 }
 
 bool Sistema::productoEnVenta(int idProducto, int idMesa) {
-    // 1) Buscar la venta activa de la mesa
-    IIterator* it = ventasActivas->getIterator();
-    while (it->hasCurrent()) {
-        Local* local = dynamic_cast<Local*>(it->getCurrent());
-        cout << "ees mesa o no" << endl;
+    IIterator* itVA = ventasActivas->getIterator();
+    bool encontrado = false;
+
+    while (itVA->hasCurrent() && !encontrado) {
+        Local* local = dynamic_cast<Local*>(itVA->getCurrent());
         if (local && local->esMesa(idMesa)) {
-            cout << "si es mesa pajero" << endl;
-            // 2) Verificar si el producto está en la venta
             ICollection* productosVenta = local->getVentaProductos();
-            if (productosVenta == NULL) {
-                cout << "No hay productos en la venta." << endl;
-                delete it;  // liberar iterador de ventas
-                return false; // no hay productos
-            }
+            if (!productosVenta) break;
+
             IIterator* itProd = productosVenta->getIterator();
-            cout << "antes de entrar al while" << endl;
-            while (itProd->hasCurrent()) {
-                cout << "dentro del while" << endl;
-                ventaProducto* vp = dynamic_cast<ventaProducto*>(itProd->getCurrent());
-                cout << "a ver si esta el codigo" << endl;
-                cout << "muestro cabeza " << vp->getProducto() << " ssssss" << endl;
-                cout << "muestro cantidad " << vp->getCantidad() << " ssssss" << endl;
-                if (vp && vp->getProducto()->getCodigo() == idProducto) {
-                    cout << "si esta el codigo" << endl;
-                    delete itProd;  // sólo eliminamos el iterador
-                    delete it;
-                    return true;    // producto encontrado
+            while (itProd->hasCurrent() && !encontrado) {
+                // 1) Obtenemos el collectible y casteamos con seguridad
+                ICollectible* col = itProd->getCurrent();
+                ventaProducto* vp = dynamic_cast<ventaProducto*>(col);
+
+                if (vp && vp->getProducto()) {
+                    // 2) Sólo ahora estamos seguros de llamar a getProducto()
+                    if (vp->getProducto()->getCodigo() == idProducto) {
+                        encontrado = true;
+                    }
                 }
                 itProd->next();
             }
-            delete itProd;  // liberar iterador de productos
-            break;          // ya procesamos esta mesa
+            delete itProd;
+            break;  // ya procesamos la venta de esta mesa
         }
-        it->next();
+        itVA->next();
     }
-    delete it;  // liberar iterador de ventas
-    return false;  // producto no encontrado
+
+    delete itVA;
+    return encontrado;
 }
+
 
 Producto* Sistema::buscarProducto(int codigo) {
     // 1) Construyo la clave
@@ -1448,6 +1436,78 @@ ICollection* Sistema::obtenerDatosVentaDomicilio() {
                     venta->getFactura()
                 );
                 ventasDelDia->add(dto);
+
+void Sistema::listarRepartidor(){
+    if(!empleados->isEmpty()){
+        IIterator* it = empleados->getIterator();
+        while(it->hasCurrent()){
+            Repartidor* rep = dynamic_cast<Repartidor*>(it->getCurrent());
+            if(rep != NULL) {
+                cout << "ID: (" << rep->getNumero() 
+                     << ") Nombre: " << rep->getNombre() 
+                     << " | Transporte: " << rep->getTransporte() 
+                     << endl;
+            }
+            it->next();
+        }
+    }
+}
+
+bool Sistema::existeCliente(const string& ciCliente) {
+    // 1) Busco en el diccionario de clientes
+    ICollectible* col = clientes->find(new String(ciCliente.c_str()));
+    if (col == NULL)
+        return false; // No existe
+    return true; // Existe
+}
+
+void Sistema::mostrarInfoRepartidor(int idRepartidor) {
+    // 1) Buscar el repartidor por ID
+    ICollectible* col = empleados->find(new Integer(idRepartidor));
+    if (col == NULL) {
+        return;
+    }
+    Repartidor* rep = dynamic_cast<Repartidor*>(col);
+    
+    // 2) Mostrar información
+    cout << ", Nombre: " << rep->getNombre() 
+         << ", Transporte: " << rep->getTransporte() 
+         << endl;
+}
+
+ICollection* Sistema::listarMozos() {
+    List* resultado = new List();
+    IIterator* it = empleados->getIterator();
+    while (it->hasCurrent()) {
+        Mozo* m = dynamic_cast<Mozo*>(it->getCurrent());
+        if (m) resultado->add(m);
+        it->next();
+    }
+    delete it;
+    return resultado;
+}
+
+ICollection* Sistema::ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) {
+    List* resultado = new List();
+    IIterator* it = ventas->getIterator(); // ventas históricas
+    while (it->hasCurrent()) {
+        Local* loc = dynamic_cast<Local*>(it->getCurrent());
+        if (loc && loc->getMozo()->getIdMozo() == idMozo) {
+            fecha* f = loc->getFactura()->getFecha();
+            // comprobamos desde ≤ f ≤ hasta
+            bool geDesde = 
+                (f->getAnio() > desde->getAnio())
+             || (f->getAnio() == desde->getAnio() &&
+                (f->getMes() > desde->getMes() ||
+                 (f->getMes() == desde->getMes() && f->getDia() >= desde->getDia())));
+            bool leHasta =
+                (f->getAnio() < hasta->getAnio())
+             || (f->getAnio() == hasta->getAnio() &&
+                (f->getMes() < hasta->getMes() ||
+                 (f->getMes() == hasta->getMes() && f->getDia() <= hasta->getDia())));
+            if (geDesde && leHasta) {
+                // mostramos la factura (dtLocal hereda de dtVenta)
+                resultado->add(loc->mostrarFactura());
             }
         }
         it->next();
