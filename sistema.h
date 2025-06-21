@@ -33,6 +33,9 @@
 #include "repartidor.h"
 #include "domicilio.h"
 
+#include <typeinfo>
+#include <iomanip> // Para std::setprecision
+
 using namespace std;
 
 class Sistema : public ISistema {
@@ -56,6 +59,7 @@ class Sistema : public ISistema {
         int idVenta; // ID de la venta, se incrementa con cada nueva venta
         int codigoProductoSeleccionado; // Código del producto seleccionado para agregar a la venta
         int cantMozos; // Cantidad de mozos registrados
+        fecha fechaConsulta;
     public:
         static Sistema * getInstance();
         ~Sistema();
@@ -65,7 +69,7 @@ class Sistema : public ISistema {
         IDictionary* getMesas();
         IDictionary* getVentas();
         bool hayProductos();
-        void ingresarProductoComun(string codigo, string nombre, float precio);
+        int ingresarProductoComun(string codigo, string nombre, float precio);
         void confirmarProducto();
         void cancelarProducto();
         ICollection* listarProductosComunes();
@@ -102,7 +106,7 @@ class Sistema : public ISistema {
         void cancelarAccion();
         //void mostrarSeleccionadas();
         void mostrarConfirmacion();
-        void altaCliente(string ci, string nombre, string telefono, direccion* direccion);
+        int altaCliente(string ci, string nombre, string telefono, direccion* direccion);
         void altaMozo(string nombre);
         void altaRepartidor(string nombre, string transporte);
         void asignarMesaAMozo();
@@ -114,6 +118,11 @@ class Sistema : public ISistema {
         Producto* buscarProducto(int codigo);
         bool productoEnVenta(int idProducto, int idMesa); // Verifica si un producto está en venta, opcionalmente en una mesa específica
         ICollection* listarVentas();
+        // funciones para parte 12
+        void solicitarConsultaFacturacionDia(fecha f);
+        ICollection* obtenerDatosFacturacion();
+        ICollection* obtenerDatosVentaDomicilio();
+        void mostrarInforme(ICollection* ventas, float total);
 };
 
 

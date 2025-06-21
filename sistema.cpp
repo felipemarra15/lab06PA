@@ -1,4 +1,6 @@
 #include "sistema.h"
+     // para std::fixed y std::setprecision
+
 Sistema* Sistema::instance = NULL;
 using namespace std;
 
@@ -54,20 +56,21 @@ bool Sistema::hayProductos() {
     return !productos->isEmpty();
 }
 
-void Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
+int Sistema::ingresarProductoComun(string codigo, string nombre, float precio) { // REVISAR
     if(codigo.empty() || nombre.empty() || precio <= 0) {
         cout << "Datos del producto inválidos." << endl;
-        return;
+        return 2;
     }
     
     // Verificar si el producto ya existe
     if (productos->member(new Integer(atoi(codigo.c_str())))) {
-        cout << "El producto ya existe." << endl;
-        return;
+        //cout << "El producto ya existe." << endl;
+        return 0;
     }
 
     // Crear un nuevo producto y agregarlo al diccionario
     productoComun = new dtSimple(atoi(codigo.c_str()), nombre, precio);
+    return 1;
 }
 
 void Sistema::confirmarProducto() {  // REVISAR
@@ -419,7 +422,7 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     cout << "Ingrese la fecha de la venta (dd/mm/yyyy): ";
     int dia, mes, anio;
     char sep;
-    // cin >> dia >> sep >> mes >> sep >> anio;
+     cin >> dia >> sep >> mes >> sep >> anio;
     dia = 10;
     mes = 10;
     anio = 2025;
@@ -427,7 +430,7 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
 
     cout << "Ingrese la hora de la venta (hh:mm): ";
     int hh, mm;
-    // cin >> hh >> sep >> mm;
+    cin >> hh >> sep >> mm;
     hh = 12;
     mm = 30;
     hora* h = new hora(hh, mm);
@@ -551,12 +554,10 @@ int Sistema::finalizarVenta(int idMesa) {
         // local->getMesa() es un IDictionary* que mapea Integer->Mesa*
         if (local != NULL && local->getMesa()->member(new Integer(idMesa))) {
             // 2) Quito de activas
-            IKey* keyVenta = new Integer(venta->getIdVenta());
-            ventasActivas->remove(keyVenta);
-            delete keyVenta;
-
+            
             // 3) Lo paso a histórico
-            ventas->add(new Integer(venta->getIdVenta()), venta);
+            ventas->add(new Integer(venta->getIdVenta()), dynamic_cast<ICollectible*>(venta));
+
 
             // 4) Marco la mesa como libre
             //    Recupero el objeto Mesa* desde el diccionario
@@ -713,10 +714,13 @@ void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
     Integer* claveProd = new Integer(idProducto);
     Producto* p = dynamic_cast<Producto*>(productos->find(claveProd));
     delete claveProd;
-    char paprobar = 'a';
-    cout << "Producto encontrado: " << (p->getNombre()) << endl;
-    if (p == NULL) 
+
+    if (p == NULL) {
+        cout << "[ERROR] Producto con ID " << idProducto << " no encontrado." << endl;
         return;  // Si no existe, salgo
+    }
+
+    cout << "Producto encontrado: " << p->getNombre() << endl;
 
     // 2) Recorrer todas las ventas activas hasta encontrar la mesa
     IIterator* it = ventasActivas->getIterator();
@@ -730,32 +734,31 @@ void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
             Local* local = dynamic_cast<Local*>(venta);
             if (local != NULL) {
                 cout << "Venta Local encontrada para la mesa: " << idMesa << endl;
-                // 4.1) Crear el ventaProducto
-                //    - El constructor de ventaProducto toma (string cantidad, Producto* prod)
+
+                // 4) Crear el ventaProducto (Producto* ya fue validado)
                 ventaProducto* vp = new ventaProducto(cantidad, p);
 
-                // 4.2) Agregarlo a la colección de la venta
-                // if (productosVenta == NULL) {
-                //     cout << "No hay productos en la venta, creando nueva colección." << endl;
-                //     productosVenta = new List();
-                // }
-                // productosVenta->add(vp);
-                // local->setVentaProductos(productosVenta);
+                // 5) Agregarlo a la colección de la venta
                 local->agregarProducto(vp);
+
+                // Debug: listar productos actuales
                 ICollection* productosVenta = local->getVentaProductos();
                 IIterator* itVP = productosVenta->getIterator();
                 while (itVP->hasCurrent()) {
-                    // cin>> paprobar; // Para pausar y ver los productos
                     ventaProducto* vpExistente = dynamic_cast<ventaProducto*>(itVP->getCurrent());
-                    cout << vpExistente->getProducto() << endl;
+                    if (vpExistente && vpExistente->getProducto())
+                        cout << "[DEBUG] Producto en venta: " << vpExistente->getProducto()->getNombre() << endl;
                     itVP->next();
                 }
+                delete itVP;
+
                 ok = true;
             }
         }
         it->next();
     }
-    cout << "Producto agregado a la venta." <<endl;
+
+    cout << "Producto agregado a la venta." << endl;
     delete it;
     codigoProductoSeleccionado = 0; // Reiniciar el código del producto seleccionado
 }
@@ -765,39 +768,52 @@ void Sistema::agregarProductoDomicilio(int idVenta, int idProducto, int cantidad
     Integer* claveProd = new Integer(idProducto);
     Producto* p = dynamic_cast<Producto*>( productos->find(claveProd) );
     delete claveProd;
-    if (p == NULL) 
-        return;  // si no existe, salgo
+
+    if (p == NULL) {
+        cout << "[ERROR] Producto con ID " << idProducto << " no encontrado." << endl;
+        return;
+    }
+
+    cout << "Producto encontrado: " << p->getNombre() << endl;
 
     // 2) Recorrer todas las ventas activas hasta encontrar la venta domicilio
     IIterator* it = ventasActivas->getIterator();
     bool ok = false;
-    while ( it->hasCurrent() && !ok ) {
+
+    while (it->hasCurrent() && !ok) {
         Venta* venta = dynamic_cast<Venta*>( it->getCurrent() );
-        // 2.1) Comparo por ID de venta genérico
+
+        // 2.1) Comparar por ID
         if (venta != NULL && venta->getIdVenta() == idVenta) {
             // 3) Encontré la venta domicilio correcta
             Domicilio* dom = dynamic_cast<Domicilio*>(venta);
             if (dom != NULL) {
-                // 4.1) Crear el ventaProducto (constructor: string cantidad, Producto*)
-                //     Si tu entorno no tiene std::to_string, usa stringstream:
-                    // Convertir 'cantidad' a string en C++98
+                // 4.1) Crear el ventaProducto con validación garantizada
                 ventaProducto* vp = new ventaProducto(cantidad, p);
 
-                // 4.2) Agregarlo a la colección de la venta domicilio
+                // 4.2) Agregar a la colección
                 ICollection* productosVenta = dom->getVentaProductos();
                 productosVenta->add(vp);
+
+                // Debug: confirmar agregado
+                cout << "[DEBUG] Producto agregado a venta a domicilio ID " << idVenta << endl;
 
                 ok = true;
             }
         }
+
         it->next();
     }
+
     delete it;
 
-    delete productoTemporal; // Liberar memoria del producto temporal
-    productoTemporal = NULL; // Evitar puntero colgante
-
+    // Limpieza adicional (si la usás en tu flujo)
+    if (productoTemporal != NULL) {
+        delete productoTemporal;
+        productoTemporal = NULL;
+    }
 }
+
 
 void Sistema::aumentarCantProducto(int idMesa, int idProducto, int cantidad) {
     // 1. Recorro ventas activas hasta la Local de la mesa
@@ -1001,23 +1017,29 @@ void Sistema::cancelarAccion() { // REVISAR
     cout << "Acción cancelada." << endl;
 }
 
-void Sistema::altaCliente(string ci, string nombre, string telefono, direccion* direccion){ //REVISAR
+int Sistema::altaCliente(string ci, string nombre, string telefono, direccion* direccion){ //REVISAR
     if(ci.empty() || nombre.empty() || telefono.empty() || direccion == NULL) {
-        cout << "Datos del cliente inválidos." << endl;
-        return;
+        //cout << "Datos del cliente inválidos." << endl;
+        return 2; // Retornar 2 para indicar error en los datos
     }
 
     // Verificar si el cliente ya existe
     if (clientes->member(new String(ci.c_str()))) {
-        cout << "El cliente ya existe." << endl;
-        return;
+        //cout << "El cliente ya existe." << endl;
+        return 0; // Retornar 0 para indicar que el cliente ya existe
     }
 
     // Crear un nuevo cliente y agregarlo al diccionario
     Cliente* nuevoCliente = new Cliente(ci, nombre, telefono, direccion);
     clientes->add(new String(nuevoCliente->getCi().c_str()), dynamic_cast<ICollectible*>(nuevoCliente));
+    cout << nuevoCliente->getNombre() << " ha sido agregado como cliente." << endl;
+    cout << "ID del cliente: " << nuevoCliente->getCi() << endl;
+    cout << "Nombre del cliente: " << nuevoCliente->getNombre() << endl;
+    cout << "Teléfono del cliente: " << nuevoCliente->getTelefono() << endl;
+    // cout << "Dirección del cliente: " << nuevoCliente->getDireccion()->toString() << endl;
+    return 1; // Retornar 1 para indicar que el cliente fue agregado exitosamente
 }
-
+ 
 
 void Sistema::altaMozo(string nombre){ //REVISAR
     if(nombre.empty()) {
@@ -1252,7 +1274,8 @@ dtVenta* Sistema::ventaDomicilio(const string& ciCliente, const string& nombreCl
 
     // 4) Finalizo
     //dom->calcularTotal();
-    ventas->add(new Integer(nuevoId), dom);
+    ventas->add(new Integer(nuevoId), dynamic_cast<ICollectible*>(dom));
+
     return dom->mostrarFactura();  // dtDomicilio* apuntado como dtVenta*
 }
 
@@ -1397,5 +1420,133 @@ ICollection* Sistema::listarVentas() {
     // Devuelves la lista de ventas
     return lista;
 }
+void Sistema::solicitarConsultaFacturacionDia(fecha f) {
+    fechaConsulta = f;
+    cout << "Consultando facturación para el día: "
+         << f.getDia() << "/" << f.getMes() << "/" << f.getAnio() << endl;
+}
+
+
+
+ICollection* Sistema::obtenerDatosVentaDomicilio() {
+    ICollection* ventasDelDia = new List();
+    IIterator* it = ventas->getIterator();
+
+    while (it->hasCurrent()) {
+        Venta* venta = dynamic_cast<Venta*>(it->getCurrent());
+        if (dynamic_cast<Domicilio*>(venta) != NULL) {
+            fecha* fechaVenta = venta->getFactura()->getFecha();
+
+            if (fechaVenta->getDia() == fechaConsulta.getDia() &&
+                fechaVenta->getMes() == fechaConsulta.getMes() &&
+                fechaVenta->getAnio() == fechaConsulta.getAnio()) {
+
+                dtVenta* dto = new dtVenta(
+                    venta->getIdVenta(),
+                    venta->getDescuento(),
+                    venta->getVentaProductos(),
+                    venta->getFactura()
+                );
+                ventasDelDia->add(dto);
+            }
+        }
+        it->next();
+    }
+
+    delete it;
+    return ventasDelDia;
+}
+
+
+void Sistema::mostrarInforme(ICollection* ventas, float totalSistema) {
+    cout << "\n--- Resumen de Facturación del Día ---\n";
+
+    IIterator* it = ventas->getIterator();
+    while (it->hasCurrent()) {
+        dtVenta* v = dynamic_cast<dtVenta*>(it->getCurrent());
+        if (v == NULL) {
+            cout << "[ERROR] Objeto no es dtVenta*\n";
+            it->next();
+            continue;
+        }
+
+        // Mostrar info disponible desde el DTO
+    cout << "  Venta " << v->getIdVenta()
+     << " | Fecha: " << v->getFactura()->getFecha()->getDia()
+     << "/" << v->getFactura()->getFecha()->getMes()
+     << "/" << v->getFactura()->getFecha()->getAnio()
+     << " | Descuento: " << v->getDescuento() << "%\n";
+
+        it->next();
+    }
+    delete it;
+
+    cout << "\nTOTAL FACTURADO (con IVA): $" << fixed << setprecision(2) << totalSistema << endl;
+}
+
+
+ICollection* Sistema::obtenerDatosFacturacion() {
+    ICollection* ventasDelDia = new List();
+    IIterator* it = ventas->getIterator();
+
+    // Contar manualmente cuántas ventas hay
+    int contadorVentas = 0;
+    IIterator* itVentas = ventas->getIterator();
+    while (itVentas->hasCurrent()) {
+        contadorVentas++;
+        itVentas->next();
+    }
+    delete itVentas;
+
+    cout << "[DEBUG] Cantidad total de ventas en el sistema: " << contadorVentas << endl;
+
+    while (it->hasCurrent()) {
+        Venta* venta = dynamic_cast<Venta*>(it->getCurrent());
+        cout << "[DEBUG] Analizando venta ID: " << venta->getIdVenta() << endl;
+
+        if (dynamic_cast<Local*>(venta) == NULL) {
+            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " no es de tipo Local. Se ignora." << endl;
+            it->next();
+            continue;
+        }
+
+        if (venta->getFactura() == NULL) {
+            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " no tiene factura. Se ignora." << endl;
+            it->next();
+            continue;
+        }
+
+        fecha* fechaVenta = venta->getFactura()->getFecha();
+
+        cout << "[DEBUG] Fecha de venta ID " << venta->getIdVenta()
+             << ": " << fechaVenta->getDia() << "/" << fechaVenta->getMes() << "/" << fechaVenta->getAnio() << endl;
+
+        cout << "[DEBUG] Comparando con fecha buscada: "
+             << fechaConsulta.getDia() << "/" << fechaConsulta.getMes() << "/" << fechaConsulta.getAnio() << endl;
+
+        if (fechaVenta->getDia() == fechaConsulta.getDia() &&
+            fechaVenta->getMes() == fechaConsulta.getMes() &&
+            fechaVenta->getAnio() == fechaConsulta.getAnio()) {
+
+            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " coincide con la fecha buscada, se agrega al informe." << endl;
+
+            dtVenta* dto = new dtVenta(
+                venta->getIdVenta(),
+                venta->getDescuento(),
+                venta->getVentaProductos(),
+                venta->getFactura()
+            );
+            ventasDelDia->add(dto);
+        }
+
+        it->next();
+    }
+
+    delete it;
+    return ventasDelDia;
+}
+
+
+
 // Implementación de los métodos de la clase Sistema
 // Aquí se pueden agregar más métodos según sea necesario
