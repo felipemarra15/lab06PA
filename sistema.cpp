@@ -227,7 +227,7 @@ void Sistema::eliminarProducto() { // REVISAR
                     cout << "El producto no puede ser eliminado porque está en uso en una venta activa." << endl;
                     delete key; // Liberar memoria del key
                     delete itVP; // Liberar memoria del iterador de productos en la venta
-                    delete vp;
+                    //delete vp;
                     delete itVA; // Liberar memoria del iterador de ventas activas
                     return;
                 }
@@ -1345,44 +1345,39 @@ void Sistema::asignarMesaAMozo(int numeroMesa, int idMozo) {
 }
 
 bool Sistema::productoEnVenta(int idProducto, int idMesa) {
-    // 1) Buscar la venta activa de la mesa
-    IIterator* it = ventasActivas->getIterator();
-    while (it->hasCurrent()) {
-        Local* local = dynamic_cast<Local*>(it->getCurrent());
-        cout << "ees mesa o no" << endl;
+    IIterator* itVA = ventasActivas->getIterator();
+    bool encontrado = false;
+
+    while (itVA->hasCurrent() && !encontrado) {
+        Local* local = dynamic_cast<Local*>(itVA->getCurrent());
         if (local && local->esMesa(idMesa)) {
-            cout << "si es mesa pajero" << endl;
-            // 2) Verificar si el producto está en la venta
             ICollection* productosVenta = local->getVentaProductos();
-            if (productosVenta == NULL) {
-                cout << "No hay productos en la venta." << endl;
-                delete it;  // liberar iterador de ventas
-                return false; // no hay productos
-            }
+            if (!productosVenta) break;
+
             IIterator* itProd = productosVenta->getIterator();
-            cout << "antes de entrar al while" << endl;
-            while (itProd->hasCurrent()) {
-                cout << "dentro del while" << endl;
-                ventaProducto* vp = dynamic_cast<ventaProducto*>(itProd->getCurrent());
-                cout << "a ver si esta el codigo" << endl;
-                cout << "muestro cabeza " << vp->getProducto() << " ssssss" << endl;
-                cout << "muestro cantidad " << vp->getCantidad() << " ssssss" << endl;
-                if (vp && vp->getProducto()->getCodigo() == idProducto) {
-                    cout << "si esta el codigo" << endl;
-                    delete itProd;  // sólo eliminamos el iterador
-                    delete it;
-                    return true;    // producto encontrado
+            while (itProd->hasCurrent() && !encontrado) {
+                // 1) Obtenemos el collectible y casteamos con seguridad
+                ICollectible* col = itProd->getCurrent();
+                ventaProducto* vp = dynamic_cast<ventaProducto*>(col);
+
+                if (vp && vp->getProducto()) {
+                    // 2) Sólo ahora estamos seguros de llamar a getProducto()
+                    if (vp->getProducto()->getCodigo() == idProducto) {
+                        encontrado = true;
+                    }
                 }
                 itProd->next();
             }
-            delete itProd;  // liberar iterador de productos
-            break;          // ya procesamos esta mesa
+            delete itProd;
+            break;  // ya procesamos la venta de esta mesa
         }
-        it->next();
+        itVA->next();
     }
-    delete it;  // liberar iterador de ventas
-    return false;  // producto no encontrado
+
+    delete itVA;
+    return encontrado;
 }
+
 
 Producto* Sistema::buscarProducto(int codigo) {
     // 1) Construyo la clave

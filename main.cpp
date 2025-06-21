@@ -523,8 +523,17 @@ void orden(ISistema* sis, int opcion) {
                         // 3) ¿Sigo agregando?
                         int opc;
                         cout << "¿Agregar otro producto al menú? (1=Sí, 0=No): ";
-                        cin >> opc;
-                        agregar = (opc == 1);
+                        if (!(cin >> opc)) {
+                            // hubo un error al leer (por ej. letra en vez de número)
+                            cin.clear(); 
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                            cout << "Entrada inválida, asumo que no y salgo.\n";
+                            agregar = false;
+                        } else {
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                            if (opc == 1) agregar = true;
+                            else agregar = false;
+                        }
                     }
 
                     // confirmo o cancel o del menú
@@ -542,6 +551,7 @@ void orden(ISistema* sis, int opcion) {
                         cout << ">> Alta de menú cancelada.\n";
                     }
                     delete prodsTemp; // Liberar memoria de la colección temporal
+                    return;
                 }
             } break;
             case 2: {
@@ -735,9 +745,11 @@ void orden(ISistema* sis, int opcion) {
                     IIterator* it = disponibles->getIterator();
                     while (it->hasCurrent()) {
                         dtProducto* p = dynamic_cast<dtProducto*>(it->getCurrent());
-                        cout << "  - Código: " << p->getCodigo()
-                            << " | " << p->getNombre()
-                            << " ($" << p->getPrecio() << ")\n";
+                        if (p) {
+                            cout << "  - Código: " << p->getCodigo()
+                                << " | " << p->getNombre()
+                                << " ($" << p->getPrecio() << ")\n";
+                        }
                         it->next();
                     }
                     delete it;
@@ -796,8 +808,73 @@ void orden(ISistema* sis, int opcion) {
                     cout << ">> Venta pendiente. Puede seguir agregando productos más tarde.\n";
                 }
             } break;
-            case 7: {
-                
+            case 7: {   // “Quitar producto a una venta”
+                cout << "\n*** QUITAR PRODUCTO A UNA VENTA ***\n";
+
+                // 1) Pedir y validar mesa
+                int idMesa;
+                cout << "ID de la mesa con venta activa: ";
+                cin >> idMesa;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                sis->ingresarMesa(idMesa);
+
+                // 2) Mostrar productos en la venta
+                ICollection* enVenta = sis->mostrarProductosEnVenta();
+                cout << "\nProductos en la venta de la mesa " << idMesa << ":\n";
+                {
+                    IIterator* it = enVenta->getIterator();
+                    while (it->hasCurrent()) {
+                        dtVentaProducto* vp = dynamic_cast<dtVentaProducto*>(it->getCurrent());
+                        if (vp) {
+                            cout << "  - Código: "  << vp->getProducto()->getCodigo()
+                                << " | Nombre: "   << vp->getProducto()->getNombre()
+                                << " | Cantidad: " << vp->getCantidad()
+                                << "\n";
+                        }
+                        it->next();
+                    }
+                    delete it;
+                }
+                delete enVenta;
+
+                // 3) Bucle para seguir quitando
+                bool seguir = true;
+                while (seguir) {
+                    string codigoStr;
+                    int    cantidad;
+
+                    cout << "\nCódigo de producto a quitar: ";
+                    getline(cin, codigoStr);
+                    cout << "Cantidad a quitar: ";
+                    cin >> cantidad;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    // almaceno la selección en el sistema
+                    sis->SeleccionarProductoYCantidad(codigoStr, cantidad);
+
+                    // confirmo o cancelo esta eliminación
+                    int conf;
+                    cout << "¿Confirmar eliminación? (1=Sí, 0=No): ";
+                    cin >> conf;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    if (conf == 1) {
+                        // sin parámetros: usa lo que guardó seleccionarProductoYCantidad()
+                        sis->eliminarProducto();
+                        cout << ">> Producto eliminado de la venta.\n";
+                    } else {
+                        sis->cancelarAccion();
+                        cout << ">> Operación cancelada para este producto.\n";
+                    }
+
+                    // ¿otra vez?
+                    cout << "¿Quitar otro producto? (1=Sí, 0=No): ";
+                    cin >> conf;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    seguir = (conf == 1);
+                }
+
+                cout << "\n>> Fin del caso “Quitar producto a una venta”.\n\n";
             } break;
             case 8: {
                 cout << "\n*** FACTURACIÓN DE UNA VENTA ***\n";
@@ -1139,10 +1216,8 @@ void orden(ISistema* sis, int opcion) {
                     //cout << ">> Baja de producto cancelada.\n";
                 }
             } break;
-            
-
         }
-}
+    }
 
 int registro(){
     cout << "===== REGISTRO =====\n";
