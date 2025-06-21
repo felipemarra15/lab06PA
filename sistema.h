@@ -65,7 +65,7 @@ class Sistema : public ISistema {
         IDictionary* getMesas();
         IDictionary* getVentas();
         bool hayProductos();
-        void ingresarProductoComun(string codigo, string nombre, float precio);
+        int ingresarProductoComun(string codigo, string nombre, float precio);
         void confirmarProducto();
         void cancelarProducto();
         ICollection* listarProductosComunes();
@@ -102,7 +102,7 @@ class Sistema : public ISistema {
         void cancelarAccion();
         //void mostrarSeleccionadas();
         void mostrarConfirmacion();
-        void altaCliente(string ci, string nombre, string telefono, direccion* direccion);
+        int altaCliente(string ci, string nombre, string telefono, direccion* direccion);
         void altaMozo(string nombre);
         void altaRepartidor(string nombre, string transporte);
         void asignarMesaAMozo();
