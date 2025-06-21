@@ -14,6 +14,8 @@
 
 using namespace std;
 
+ICollection* cuentas;
+
 void cargarDatosPrueba(ISistema* sis) {
     // --- Productos comunes iniciales
     sis->ingresarProductoComun("1", "Café", 1.50f);
@@ -82,6 +84,7 @@ void cargarDatosPrueba(ISistema* sis) {
     // sis->agregarProducto(3, 103, 1);
     // sis->agregarProducto(3, 109, 1);
     // sis->finalizarVenta(3);
+
     
     cout << ">> Datos de prueba cargados.\n\n";
 }
@@ -793,6 +796,9 @@ void orden(ISistema* sis, int opcion) {
                     cout << ">> Venta pendiente. Puede seguir agregando productos más tarde.\n";
                 }
             } break;
+            case 7: {
+                
+            } break;
             case 8: {
                 cout << "\n*** FACTURACIÓN DE UNA VENTA ***\n";
 
@@ -1018,7 +1024,8 @@ void orden(ISistema* sis, int opcion) {
                     }
                     delete itI;
                     delete items;
-                }
+                } 
+            }break;
             case 10: {
                 cout << "\n*** VENTAS DE UN MOZO ***\n";
                 // 1) Mostrar lista de mozos
@@ -1137,36 +1144,70 @@ void orden(ISistema* sis, int opcion) {
         }
 }
 
+int registro(){
+    cout << "===== REGISTRO =====\n";
+    cout << "Cotrreo electrónico: ";
+    string email;
+    cin >> email;
+    cout << "Contraseña: ";
+    string password;
+    cin >> password;
+    if(email == "a@a" && password == "123"){
+        return 1; // Admin
+    }else if (email == "m@m" && password == "123"){ 
+        return 2; // Mozo
+    } else {
+        return 0;
+    }
+    
+}
+
 int main() {
     ISistema* sis = factory::getSistema();
     int opcion;
     cargarDatosPrueba(sis); // Cargar datos de prueba al inicio
+
+    int validacion = registro();
     
 
     do {
         cout << "===== MENÚ PRINCIPAL =====\n";
-        cout << "1) Alta Producto\n";   //Completo
-        cout << "2) Alta Cliente\n";    //Completo
-        cout << "3) Alta Empleado\n";   //Completo
-        cout << "4) Asignar mesas a mozos\n";   //ANDA SI NO TIENE VENTAS ACTIVAS PRECARGADAS
-        cout << "5) Iniciar venta en mesas\n";  //Revisar
-        cout << "6) Agregar producto a una venta\n"; //GOD
-        cout << "7) Quitar producto de una venta\n";
-        cout << "8) Facturacion de una venta\n"; //Completo
-        cout << "9) Venta domicilio\n"; //TESTEAR
-        cout << "10) Ventas de un mozo\n";
-        cout << "11) Información de un producto\n"; //ANDA
-        cout << "12) Resumen de facturación de un dia\n";
-        cout << "13) Baja de producto\n";   //Completo
+        cout << "1) Alta Producto [ADMIN]\n";   //Completo
+        cout << "2) Alta Cliente [ADMIN]\n";    //Completo
+        cout << "3) Alta Empleado [ADMIN]\n";   //Completo
+        cout << "4) Asignar mesas a mozos [ADMIN]\n";   //ANDA SI NO TIENE VENTAS ACTIVAS PRECARGADAS
+        cout << "5) Iniciar venta en mesas [Mozo]\n";  //Revisar
+        cout << "6) Agregar producto a una venta [Mozo]\n"; //GOD
+        cout << "7) Quitar producto de una venta [Mozo]\n"; //JOACO
+        cout << "8) Facturacion de una venta [Mozo]\n"; //Completo
+        cout << "9) Venta domicilio [ADMIN]\n"; //TESTEAR
+        cout << "10) Ventas de un mozo [ADMIN]\n"; //ANDA
+        cout << "11) Información de un producto [ADMIN]\n"; //ANDA
+        cout << "12) Resumen de facturación de un dia [ADMIN]\n"; //Cristian
+        cout << "13) Baja de producto [ADMIN]\n";   //Completo
         cout << "0) Salir\n";
         cout << ">>> "; cin >> opcion;
         
+        bool s = false;
+
         if (opcion < 0 || opcion > 13) {
             cout << "Opción inválida. Intente nuevamente.\n";
             continue;
-        }
+        } else if (opcion == 0) {
+            cout << "Saliendo del sistema...\n";
+            break;
+        } else if (validacion = 1 && (opcion == 1 || opcion == 2 || opcion == 3 || opcion == 4 || opcion == 9 || opcion == 10 || opcion == 11 || opcion == 12 || opcion == 13)){
+            s = true; // Admin tiene permisos para estas opciones
+        } else if (validacion == 2 && (opcion == 5 || opcion == 6 || opcion == 7 || opcion == 8)){
+            s = true;
+        } else {
 
-        orden(sis, opcion);
+        }
+        
+        if(s)
+            orden(sis, opcion);
+        else
+            cout << "No tiene permisos para realizar esta acción.\n";
 
     } while(opcion != 0);
     return 0;
