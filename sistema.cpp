@@ -423,13 +423,11 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     cout << "Ingrese la fecha de la venta (dd/mm/yyyy): ";
     int dia, mes, anio;
     char sep;
-     //cin >> dia >> sep >> mes >> sep >> anio;
-     dia = 12; mes = 10; anio = 2023; // Para pruebas, fecha fija
+     cin >> dia >> sep >> mes >> sep >> anio;
     fecha* f = new fecha(dia, mes, anio);
     cout << "Ingrese la hora de la venta (hh:mm): ";
     int hh, mm;
-    //in >> hh >> sep >> mm;
-    hh = 14; mm = 30; // Para pruebas, hora fija
+    cin >> hh >> sep >> mm;
     hora* h = new hora(hh, mm);
 
     // 4) Creo la factura
