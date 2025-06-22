@@ -1,9 +1,10 @@
 #include "dtLocal.h"
 
 //Constructor
-// dtLocal::dtLocal(int idVenta, int descuento, ICollection* ventaProducto, Factura* factura, IDictionary* mesa) : dtVenta(idVenta, descuento, ventaProducto, factura) {
-//     this->mesa = mesa;
-// }
+dtLocal::dtLocal(int idVenta, int descuento, ICollection* ventaProducto, Factura* factura, IDictionary* mesa, Mozo* mozo) : dtVenta(idVenta, descuento, ventaProducto, factura) {
+    this->mesa = mesa;
+    this->mozo = mozo; // Asignar el mozo
+}
 
 //Destructor
 dtLocal::~dtLocal(){

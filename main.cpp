@@ -1180,11 +1180,11 @@ void orden(ISistema* sis, int opcion) {
                 fecha f(dia, mes, anio);
                 sis->solicitarConsultaFacturacionDia(f);
 
-                ICollection* ventasLocales = sis->obtenerDatosFacturacion();
-                ICollection* ventasDomicilio = sis->obtenerDatosVentaDomicilio();
+                ICollection* ventasLocales = sis->obtenerDatosFacturacion(f);
+                ICollection* ventasDomicilio = sis->obtenerDatosVentaDomicilio(f);
+                
 
                 ICollection* ventasTotales = new List();
-
                 // Agregar ventas locales
                 IIterator* itL = ventasLocales->getIterator();
                 while (itL->hasCurrent()) {
@@ -1206,56 +1206,34 @@ void orden(ISistema* sis, int opcion) {
                 IIterator* itTotal = ventasTotales->getIterator();
 
                 while (itTotal->hasCurrent()) {
-                    dtVenta* v = dynamic_cast<dtVenta*>(itTotal->getCurrent());
-
-                    if (!v) {
-                        cout << "[ERROR] Objeto en ventasTotales no es de tipo dtVenta*" << endl;
-                        itTotal->next();
-                        continue;
-                    }
-
-                    ICollection* items = v->getVentaProductos();
-                    if (!items) {
-                        cout << "[ERROR] Venta ID " << v->getIdVenta() << " no tiene productos." << endl;
-                        itTotal->next();
-                        continue;
-                    }
-
-                    IIterator* itItems = items->getIterator();
-                    double sub = 0;
-
-                    while (itItems->hasCurrent()) {
-                        dtVentaProducto* vp = dynamic_cast<dtVentaProducto*>(itItems->getCurrent());
-
-                        if (!vp || !vp->getProducto()) {
-                            cout << "[ERROR] Producto inválido en venta ID " << v->getIdVenta() << endl;
-                            itItems->next();
-                            continue;
+                    Venta* v= dynamic_cast<Venta*>(itTotal->getCurrent());
+                    if (v) {
+                        IIterator* itProd = v->getVentaProductos()->getIterator();
+                        while (itProd->hasCurrent()) {
+                            ventaProducto* vp = dynamic_cast<ventaProducto*>(itProd->getCurrent());
+                            if (vp) {
+                                totalFacturado += vp->getCantidad() * vp->getProducto()->getPrecio();
+                            }
+                            itProd->next();
                         }
-
-                        double precioUnitario = vp->getProducto()->getPrecio();
-                        int cantidad = vp->getCantidad();
-                        sub += precioUnitario * cantidad;
-
-                        itItems->next();
                     }
-                    delete itItems;
-
-                    float descuento = v->getDescuento();
-                    float total = sub * (1 - descuento / 100.0f);
-                    float totalIVA = total * 1.22f;
-
-                    totalFacturado += totalIVA;
-
                     itTotal->next();
                 }
                 delete itTotal;
 
+                cout << totalFacturado << endl;
+
                 // Mostrar resumen
                 sis->mostrarInforme(ventasTotales, totalFacturado);
 
+                IIterator* it = ventasTotales->getIterator();
+                while (it->hasCurrent()) {
+                    delete it->getCurrent();
+                    it->next();
+                }
+
                 break;
-            }
+        }
      
             case 13: {
                 cout << "\n*** BAJA DE PRODUCTO ***\n";
@@ -1348,7 +1326,7 @@ int main() {
     int opcion;
     cargarDatosPrueba(sis); // Cargar datos de prueba al inicio
 
-    int validacion = registro();
+    // int validacion = registro();
     
 
     do {
@@ -1366,29 +1344,37 @@ int main() {
         cout << "11) Información de un producto [ADMIN]\n"; //ANDA
         cout << "12) Resumen de facturación de un dia [ADMIN]\n"; //Cristian
         cout << "13) Baja de producto [ADMIN]\n";   //Completo
+        cout << "14) Cerrar sesión\n"; //Completo
+        cout << "=========================\n";
         cout << "0) Salir\n";
         cout << ">>> "; cin >> opcion;
         
-        bool s = false;
+        // bool s = false;
 
-        if (opcion < 0 || opcion > 13) {
-            cout << "Opción inválida. Intente nuevamente.\n";
-            continue;
-        } else if (opcion == 0) {
-            cout << "Saliendo del sistema...\n";
-            break;
-        } else if (validacion = 1 && (opcion == 1 || opcion == 2 || opcion == 3 || opcion == 4 || opcion == 9 || opcion == 10 || opcion == 11 || opcion == 12 || opcion == 13)){
-            s = true; // Admin tiene permisos para estas opciones
-        } else if (validacion == 2 && (opcion == 5 || opcion == 6 || opcion == 7 || opcion == 8)){
-            s = true;
-        } else {
+        // if(opcion == 14){
+        //     validacion = registro();
+        //     cout << "Ingrese opcion (0-14): ";
+        //     cin >> opcion;
+        // }
 
-        }
+        // if (opcion < 0 || opcion > 14) {
+        //     cout << "Opción inválida. Intente nuevamente.\n";
+        //     continue;
+        // } else if (opcion == 0) {
+        //     cout << "Saliendo del sistema...\n";
+        //     break;
+        // } else if (validacion = 1 && (opcion == 1 || opcion == 2 || opcion == 3 || opcion == 4 || opcion == 9 || opcion == 10 || opcion == 11 || opcion == 12 || opcion == 13)){
+        //     s = true; // Admin tiene permisos para estas opciones
+        // } else if (validacion == 2 && (opcion == 5 || opcion == 6 || opcion == 7 || opcion == 8)){
+        //     s = true;
+        // } else {
+        //     s = false; // No tiene permisos para estas opciones
+        // }
         
-        if(s)
+        // if(s)
             orden(sis, opcion);
-        else
-            cout << "No tiene permisos para realizar esta acción.\n";
+        // else
+        //     cout << "No tiene permisos para realizar esta acción.\n";
 
     } while(opcion != 0);
     return 0;

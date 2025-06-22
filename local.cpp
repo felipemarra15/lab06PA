@@ -40,6 +40,16 @@ void Local::setMozo(Mozo* mozo) {
 
 //funciones
 dtVenta* Local::mostrarFactura() {
-    return new dtLocal(this->getIdVenta(), this->getDescuento(), this->getVentaProductos(), this->getFactura(), this->mesa); // Asumiendo que se obtiene una mesa por defecto, ajustar según sea necesario
+    IIterator* it = this->getVentaProductos()->getIterator();
+    ICollection* productos = new List();
+    while (it->hasCurrent()) {
+        ventaProducto* vp = dynamic_cast<ventaProducto*>(it->getCurrent());
+        if (vp) {
+            dtProducto* prod = dynamic_cast<dtProducto*>(vp->getProducto());
+            productos->add( dynamic_cast<ICollectible*>(new dtVentaProducto(prod, vp->getCantidad())));
+        }
+        it->next();
+    }
+    return new dtLocal(this->getIdVenta(), this->getDescuento(), productos, this->getFactura(), this->mesa, this->mozo); // Asumiendo que se obtiene una mesa por defecto, ajustar según sea necesario
 }
 

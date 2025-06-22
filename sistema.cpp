@@ -423,16 +423,11 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     int dia, mes, anio;
     char sep;
      cin >> dia >> sep >> mes >> sep >> anio;
-    dia = 10;
-    mes = 10;
-    anio = 2025;
     fecha* f = new fecha(dia, mes, anio);
 
     cout << "Ingrese la hora de la venta (hh:mm): ";
     int hh, mm;
     cin >> hh >> sep >> mm;
-    hh = 12;
-    mm = 30;
     hora* h = new hora(hh, mm);
 
     // 4) Creo la factura
@@ -1416,26 +1411,27 @@ void Sistema::solicitarConsultaFacturacionDia(fecha f) {
 
 
 
-ICollection* Sistema::obtenerDatosVentaDomicilio() {
+ICollection* Sistema::obtenerDatosVentaDomicilio(fecha f) {
     ICollection* ventasDelDia = new List();
     IIterator* it = ventas->getIterator();
 
     while (it->hasCurrent()) {
-        Venta* venta = dynamic_cast<Venta*>(it->getCurrent());
-        if (dynamic_cast<Domicilio*>(venta) != NULL) {
-            fecha* fechaVenta = venta->getFactura()->getFecha();
+        Domicilio* lol = dynamic_cast<Domicilio*>(it->getCurrent());
+        if (lol) {
+            fecha* fechaVenta = lol->getFactura()->getFecha();
+            if (fechaVenta->getDia() == f.getDia() &&
+                fechaVenta->getMes() == f.getMes() &&
+                fechaVenta->getAnio() == f.getAnio()) {
+                // Si la fecha de la venta coincide con la fecha buscada
+                ventasDelDia->add(lol); // Obtener el DTO de la factura
+                }
+            }
+            it->next();
+        }
 
-            if (fechaVenta->getDia() == fechaConsulta.getDia() &&
-                fechaVenta->getMes() == fechaConsulta.getMes() &&
-                fechaVenta->getAnio() == fechaConsulta.getAnio()) {
-
-                dtVenta* dto = new dtVenta(
-                    venta->getIdVenta(),
-                    venta->getDescuento(),
-                    venta->getVentaProductos(),
-                    venta->getFactura()
-                );
-                ventasDelDia->add(dto);
+    delete it;
+    return ventasDelDia;
+}
 
 void Sistema::listarRepartidor(){
     if(!empleados->isEmpty()){
@@ -1512,9 +1508,8 @@ ICollection* Sistema::ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) {
         }
         it->next();
     }
-
     delete it;
-    return ventasDelDia;
+    return resultado;
 }
 
 
@@ -1525,7 +1520,6 @@ void Sistema::mostrarInforme(ICollection* ventas, float totalSistema) {
     while (it->hasCurrent()) {
         dtVenta* v = dynamic_cast<dtVenta*>(it->getCurrent());
         if (v == NULL) {
-            cout << "[ERROR] Objeto no es dtVenta*\n";
             it->next();
             continue;
         }
@@ -1541,64 +1535,25 @@ void Sistema::mostrarInforme(ICollection* ventas, float totalSistema) {
     }
     delete it;
 
-    cout << "\nTOTAL FACTURADO (con IVA): $" << fixed << setprecision(2) << totalSistema << endl;
+    cout << "\nTOTAL FACTURADO (con IVA): $" << totalSistema << endl;
 }
 
 
-ICollection* Sistema::obtenerDatosFacturacion() {
+ICollection* Sistema::obtenerDatosFacturacion(fecha f) {
     ICollection* ventasDelDia = new List();
     IIterator* it = ventas->getIterator();
 
-    // Contar manualmente cuántas ventas hay
-    int contadorVentas = 0;
-    IIterator* itVentas = ventas->getIterator();
-    while (itVentas->hasCurrent()) {
-        contadorVentas++;
-        itVentas->next();
-    }
-    delete itVentas;
-
-    cout << "[DEBUG] Cantidad total de ventas en el sistema: " << contadorVentas << endl;
-
     while (it->hasCurrent()) {
-        Venta* venta = dynamic_cast<Venta*>(it->getCurrent());
-        cout << "[DEBUG] Analizando venta ID: " << venta->getIdVenta() << endl;
-
-        if (dynamic_cast<Local*>(venta) == NULL) {
-            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " no es de tipo Local. Se ignora." << endl;
-            it->next();
-            continue;
+        Local* lol = dynamic_cast<Local*>(it->getCurrent());
+        if (lol) {
+            fecha* fechaVenta = lol->getFactura()->getFecha();
+            if (fechaVenta->getDia() == f.getDia() &&
+                fechaVenta->getMes() == f.getMes() &&
+                fechaVenta->getAnio() == f.getAnio()) {
+                // Si la fecha de la venta coincide con la fecha buscada
+                ventasDelDia->add(lol); // Obtener el DTO de la factura
+            }
         }
-
-        if (venta->getFactura() == NULL) {
-            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " no tiene factura. Se ignora." << endl;
-            it->next();
-            continue;
-        }
-
-        fecha* fechaVenta = venta->getFactura()->getFecha();
-
-        cout << "[DEBUG] Fecha de venta ID " << venta->getIdVenta()
-             << ": " << fechaVenta->getDia() << "/" << fechaVenta->getMes() << "/" << fechaVenta->getAnio() << endl;
-
-        cout << "[DEBUG] Comparando con fecha buscada: "
-             << fechaConsulta.getDia() << "/" << fechaConsulta.getMes() << "/" << fechaConsulta.getAnio() << endl;
-
-        if (fechaVenta->getDia() == fechaConsulta.getDia() &&
-            fechaVenta->getMes() == fechaConsulta.getMes() &&
-            fechaVenta->getAnio() == fechaConsulta.getAnio()) {
-
-            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " coincide con la fecha buscada, se agrega al informe." << endl;
-
-            dtVenta* dto = new dtVenta(
-                venta->getIdVenta(),
-                venta->getDescuento(),
-                venta->getVentaProductos(),
-                venta->getFactura()
-            );
-            ventasDelDia->add(dto);
-        }
-
         it->next();
     }
 
