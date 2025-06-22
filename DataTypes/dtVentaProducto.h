@@ -6,8 +6,9 @@
 
 #include "dtVenta.h"
 #include "dtProducto.h"
-#include "../ICollection/interfaces/ICollectible.h"
+
 #include "../ICollection/interfaces/ICollection.h"
+#include "../ICollection/collections/List.h"
 
 using namespace std;
 
