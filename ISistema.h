@@ -73,14 +73,15 @@ class ISistema {
         virtual Producto* buscarProducto(int codigo) = 0;
         virtual ICollection* listarVentas() = 0;
         virtual void solicitarConsultaFacturacionDia(fecha f) = 0;
-        virtual ICollection* obtenerDatosFacturacion() = 0;
-        virtual ICollection* obtenerDatosVentaDomicilio() = 0;
+        virtual ICollection* obtenerDatosFacturacion(fecha f) = 0;
+        virtual ICollection* obtenerDatosVentaDomicilio(fecha f) = 0;
         virtual void mostrarInforme(ICollection* ventas, float total) = 0;
         virtual void listarRepartidor() = 0;
         virtual bool existeCliente(const string& ciCliente) = 0; // Verifica si un cliente existe por su cédula
         virtual void mostrarInfoRepartidor(int idRepartidor) = 0;
         virtual ICollection* listarMozos() = 0;
         virtual ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) = 0;
+        // parte 12 la secuela
 };
 
 
