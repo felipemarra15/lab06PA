@@ -129,6 +129,7 @@ class Sistema : public ISistema {
         void mostrarInfoRepartidor(int idRepartidor);
         ICollection* listarMozos();
        ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta);
+       
 };
 
 

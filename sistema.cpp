@@ -1436,6 +1436,14 @@ ICollection* Sistema::obtenerDatosVentaDomicilio() {
                     venta->getFactura()
                 );
                 ventasDelDia->add(dto);
+            }
+        }
+        it->next();
+    }
+
+    delete it;
+    return ventasDelDia;
+}
 
 void Sistema::listarRepartidor(){
     if(!empleados->isEmpty()){
