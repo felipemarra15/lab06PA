@@ -4,7 +4,7 @@
 ListNode::ListNode(ICollectible* elem, ListNode* next):
         next(next) {
     if(elem == NULL)
-        std::invalid_argument("elem is NULL");
+        throw std::invalid_argument("elem is NULL");
     this->elem = elem;
 }
 
@@ -16,7 +16,7 @@ ICollectible *ListNode::getElem() const
 void ListNode::setElem(ICollectible* elem)
 {
     if(elem == NULL)
-        std::invalid_argument("elem is NULL");
+        throw std::invalid_argument("elem is NULL");
     this->elem = elem;
 }
 

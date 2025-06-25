@@ -7,7 +7,8 @@ dtProducto::dtProducto(int codigo,string nombre,float precio){
 }
 
 dtProducto::~dtProducto(){
-    cout<<"destructor de dtProducto"<<endl;
+    // Destructor vacío, no hay recursos que liberar
+    // Si hubiera recursos dinámicos, se liberarían aquí
 }
 
 int dtProducto::getCodigo(){

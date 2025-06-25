@@ -8,7 +8,7 @@ CantidadSimple::CantidadSimple(Producto* producto, int cantidad) {
 
 // Destructor
 CantidadSimple::~CantidadSimple() {
-    cout << "Destructor de CantidadSimple" << endl;
+    producto = NULL; // Liberar el puntero al producto
     delete producto;
 }
 

@@ -1,5 +1,6 @@
 #include "List.h"
 #include "ListIterator.h"
+#include <iostream>
 
 List::List():
    head(NULL), size(0){

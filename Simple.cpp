@@ -5,7 +5,7 @@ Simple::Simple(int codigo, string nombre, float precio): Producto(codigo, nombre
 }
 
 Simple::~Simple() {
-    cout << "Destructor de Simple" << endl;
+    // Destructor vacío, no hay recursos que liberar
 }
 
 dtSimple* Simple::getProducto() {

@@ -19,7 +19,25 @@ Domicilio::Domicilio(int idVenta, int descuento, bool retira, ICollection* venta
 
 //Destructor
 Domicilio::~Domicilio(){
-    cout<<"destructor de Domicilio"<<endl;
+    // Liberar memoria de los productos de venta y la factura
+    if (this->getVentaProductos() != NULL) {
+        IIterator* it = this->getVentaProductos()->getIterator();
+        while (it->hasCurrent()) {
+            ICollectible* col = it->getCurrent();
+            ventaProducto* vp = dynamic_cast<ventaProducto*>(col);
+            this->getVentaProductos()->remove(new Integer(vp->getProducto()->getCodigo())); // Liberar memoria del producto de venta
+            it->next();
+        }
+        delete it;
+        delete this->getVentaProductos(); // Liberar la colección de productos de venta
+    }
+    if (this->getFactura() != NULL) {
+        delete this->getFactura(); // Liberar la factura
+    }
+    this->repartidor = NULL; // Liberar el repartidor asociado
+    this->cliente = NULL; // Liberar el cliente asociado
+    delete this->cliente; // Liberar memoria del cliente
+    delete this->repartidor; // Liberar memoria del repartidors
 }
 
 //Getters
@@ -50,10 +68,23 @@ void Domicilio::setCliente(Cliente* cliente) {
 
 //Mostrar factura
 dtVenta* Domicilio::mostrarFactura() {
+    IIterator* it = this->getVentaProductos()->getIterator();
+    ICollection* productos = new List();
+    while (it->hasCurrent()) {
+        ventaProducto* vp = dynamic_cast<ventaProducto*>(it->getCurrent());
+        if (vp) {
+            cout << "HOLA" << endl;
+            cout << "Producto: " << vp->getProducto()->getNombre() 
+                 << " | Cantidad: " << vp->getCantidad() << endl;
+            dtProducto* prod = dynamic_cast<dtProducto*>(vp->getProducto());
+            productos->add( dynamic_cast<ICollectible*>(new dtVentaProducto(prod, vp->getCantidad())));
+        }
+        it->next();
+    }
     if (this->getRepartidor() != NULL) 
-        return new dtDomicilio(this->getIdVenta(), this->getDescuento(), this->getVentaProductos(), this->getFactura(), this->getRetira(), this->getCliente(), this->getRepartidor());
+        return new dtDomicilio(this->getIdVenta(), this->getDescuento(), productos, this->getFactura(), this->getRetira(), this->getCliente(), this->getRepartidor());
     else 
-        return new dtDomicilio(this->getIdVenta(), this->getDescuento(), this->getVentaProductos(), this->getFactura(), this->getRetira(), this->getCliente());
+        return new dtDomicilio(this->getIdVenta(), this->getDescuento(), productos, this->getFactura(), this->getRetira(), this->getCliente());
 }
 
 float Domicilio::calcularTotal() {

@@ -17,7 +17,8 @@ fecha::fecha (int d, int m, int a){
 
 // DESTRUCTOR:
 fecha::~fecha(){
-    cout << "destruct de fecha" << endl;
+    // Destructor vacío, no hay recursos que liberar
+    // Si hubiera recursos dinámicos, se liberarían aquí
 }
 
 // GETTERS:

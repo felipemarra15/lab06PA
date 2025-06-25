@@ -11,7 +11,18 @@ Mozo::Mozo(int numero, string nombre, int idMozo) : Empleado(numero, nombre){
 
 //Destructor
 Mozo::~Mozo(){
-    cout << "Mozo eliminado!" << endl;
+    IIterator* it = mesa->getIterator();
+    while (it->hasCurrent()) {
+        ICollectible* col = it->getCurrent();
+        Mesa* m = dynamic_cast<Mesa*>(col);
+        if (m) {
+            this->mesa->remove(col); // Liberar memoria de cada mesa
+        }
+        it->next();
+    }
+
+    delete it;
+    delete mesa; // Liberar la colección de mesas
 }
 
 //Getters

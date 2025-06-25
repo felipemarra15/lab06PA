@@ -12,7 +12,7 @@ ventaProducto::ventaProducto(int cant, Producto* prod){
 
 //Destructor
 ventaProducto::~ventaProducto(){
-    cout << "destructor de ventaProducto" << endl;
+    
 }
 
 //Getters

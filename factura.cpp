@@ -9,7 +9,9 @@ Factura::Factura(fecha* f, hora *h, float iva){
 
 // DESTRUCTOR:
 Factura::~Factura(){
-    std::cout << "Factura destruida" << std::endl;
+    delete this->f; // Liberar memoria de fecha
+    delete this->h; // Liberar memoria de hora
+    // No es necesario liberar 'iva' ya que es un tipo primitivo
 }
 
 // GETTERS:

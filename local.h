@@ -9,6 +9,10 @@
 #include "factura.h"
 #include "mesa.h"
 //#include "mozo.h"
+
+#include "DataTypes/dtProducto.h"
+#include "DataTypes/dtVentaProducto.h"
+
 #include "ICollection/interfaces/IDictionary.h"
 class Mozo; // Declaración anticipada de la clase Mozo
 

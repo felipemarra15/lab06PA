@@ -9,7 +9,20 @@ dtVenta::dtVenta(int idV, int des, ICollection* ventaProductos, Factura* factura
 }
         
 dtVenta::~dtVenta(){
-    cout << "destructor de DtVenta" << endl;
+    // Liberar memoria de los productos de venta y la factura
+    if (ventaProductos != NULL) {
+        IIterator* it = ventaProductos->getIterator();
+        while (it->hasCurrent()) {
+            ICollectible* col = it->getCurrent();
+            this->ventaProductos->remove(col); // Liberar memoria del producto de venta
+            it->next();
+        }
+        delete it;
+        delete ventaProductos; // Liberar la colección de productos de venta
+    }
+    if (factura != NULL) {
+        delete factura; // Liberar la factura
+    }
 }
 
 // Getters

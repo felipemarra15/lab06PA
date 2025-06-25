@@ -16,7 +16,26 @@ dtDomicilio::dtDomicilio(int idVenta, int descuento, ICollection* ventaProducto,
 }
 
 dtDomicilio::~dtDomicilio(){
-    cout<<"destructor de dtDomicilio"<<endl;
+    // Liberar memoria de los productos de venta
+    if (this->getVentaProductos() != NULL) {
+        IIterator* it = this->getVentaProductos()->getIterator();
+        while (it->hasCurrent()) {
+            ICollectible* col = it->getCurrent();
+            this->getVentaProductos()->remove(col); // Liberar memoria del producto de venta
+            it->next();
+        }
+        delete it;
+        delete this->getVentaProductos(); // Liberar la colección de productos de venta
+    }
+    if (this->getFactura() != NULL) {
+        delete this->getFactura(); // Liberar la factura
+    }
+    // No es necesario liberar cliente y repartidor, ya que se asume que su ciclo de vida es gestionado por el sistema
+
+    this->repartidor = NULL; // Asegurarse de que el repartidor no apunte a memoria liberada
+    this->cliente = NULL; // Asegurarse de que el cliente no apunte
+    delete this->cliente; // Liberar memoria del cliente
+    delete this->repartidor; // Liberar memoria del repartidor
 }
 
 bool dtDomicilio::getRetira(){

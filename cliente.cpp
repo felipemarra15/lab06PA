@@ -11,7 +11,6 @@ Cliente::Cliente(string ci, string nombre, string telefono, direccion *direccion
 
 // Destructor
 Cliente::~Cliente() {
-    std::cout << "Destructor de Cliente" << std::endl;
     delete dir; // Liberar memoria de la dirección
 }
 

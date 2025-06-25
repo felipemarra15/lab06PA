@@ -5,6 +5,12 @@
 #include <string>
 
 #include "DataTypes/dtDomicilio.h"
+#include "DataTypes/dtVentaProducto.h"
+#include "DataTypes/dtProducto.h"
+
+#include "ICollection/interfaces/ICollection.h"
+
+
 #include "venta.h"
 
 using namespace std;

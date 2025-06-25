@@ -9,7 +9,8 @@ Producto::Producto(int codigo, string nombre, float precio) {
 
 // DESTRUCTOR:
 Producto::~Producto() {
-    cout << "Producto destruido" << std::endl;
+    // Destructor vacío, no hay recursos que liberar
+    // Si hubiera recursos dinámicos, se liberarían aquí
 }
 
 // GETTERS:

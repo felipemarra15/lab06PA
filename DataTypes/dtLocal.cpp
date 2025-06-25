@@ -1,14 +1,28 @@
 #include "dtLocal.h"
 
 //Constructor
-// dtLocal::dtLocal(int idVenta, int descuento, ICollection* ventaProducto, Factura* factura, IDictionary* mesa) : dtVenta(idVenta, descuento, ventaProducto, factura) {
-//     this->mesa = mesa;
-// }
+dtLocal::dtLocal(int idVenta, int descuento, ICollection* ventaProducto, Factura* factura, IDictionary* mesa, Mozo* mozo) : dtVenta(idVenta, descuento, ventaProducto, factura) {
+    this->mesa = mesa;
+    this->mozo = mozo; // Asignar el mozo
+}
 
 //Destructor
 dtLocal::~dtLocal(){
-    std::cout << "Destructor de dtLocal" << std::endl;
-    delete mesa; // Liberar memoria de la mesa
+    // Liberar memoria de la mesa
+    if (mesa != NULL) {
+        IIterator* it = mesa->getIterator();
+        while (it->hasCurrent()) {
+            ICollectible* col = it->getCurrent();
+            Mesa* m = dynamic_cast<Mesa*>(col);
+            if (m) {
+                this->getVentaProductos()->remove(new Integer(m->getidMesa())); // Liberar memoria de cada mesa
+            }
+            it->next();
+        }
+        delete it;
+        delete mesa; // Liberar la colección de mesas
+    }
+    // No es necesario liberar mozo, ya que se asume que su ciclo de vida es gestionado por el sistema
 }
 
 IDictionary* dtLocal::getMesa() {

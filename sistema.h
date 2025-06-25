@@ -10,6 +10,7 @@
 
 #include "DataTypes/dtProducto.h"
 #include "DataTypes/dtVenta.h"
+#include "DataTypes/dtLocal.h"
 #include "DataTypes/dtVentaProducto.h"
 #include "DataTypes/dtCantidadSimple.h"
 #include "DataTypes/dtMenu.h"
@@ -64,11 +65,6 @@ class Sistema : public ISistema {
     public:
         static Sistema * getInstance();
         ~Sistema();
-        IDictionary* getCliente();
-        IDictionary* getEmpleados();
-        IDictionary* getProductos();
-        IDictionary* getMesas();
-        IDictionary* getVentas();
         bool hayProductos();
         int ingresarProductoComun(string codigo, string nombre, float precio);
         void confirmarProducto();
@@ -121,14 +117,17 @@ class Sistema : public ISistema {
         ICollection* listarVentas();
         // funciones para parte 12
         void solicitarConsultaFacturacionDia(fecha f);
-        ICollection* obtenerDatosFacturacion();
-        ICollection* obtenerDatosVentaDomicilio();
+        ICollection* obtenerDatosFacturacion(fecha f);
+        ICollection* obtenerDatosVentaDomicilio(fecha f);
         void mostrarInforme(ICollection* ventas, float total);
         void listarRepartidor();
         bool existeCliente(const string& ciCliente);
         void mostrarInfoRepartidor(int idRepartidor);
         ICollection* listarMozos();
-       ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta);
+        ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta);
+        ICollection* obtenerVentasDelDia(fecha f);
+        bool esMesaEnVentaActiva(int idMesa);
+        void retirarElemento(int idMesa, int codigoProducto, int cantidad); // Retira elementos de las colecciones para evitar fugas de memoria
 };
 
 

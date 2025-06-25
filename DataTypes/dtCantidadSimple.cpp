@@ -8,8 +8,11 @@ dtCantidadSimple::dtCantidadSimple(Producto* producto, int cantidad) {
 
 // Destructor
 dtCantidadSimple::~dtCantidadSimple() {
-    cout << "Destrucor de dtCantidadSimple" << endl;
-    delete producto; // Liberar memoria del producto
+    // Liberar memoria del producto si es necesario
+    if (producto != NULL) {
+        producto = NULL; // Asumimos que el producto fue creado dinámicamente y se debe liberar
+        delete producto; // Asumiendo que el producto fue creado dinámicamente
+    }
 }
 
 // Getters

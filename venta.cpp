@@ -17,9 +17,20 @@ Venta::Venta(int idVenta, int descuento, ICollection* ventaProductos, Factura* f
 // destructor
 
 Venta::~Venta(){
-    cout << "Destructor de Venta" << endl;
-    delete ventaProductos;
-    delete factura;
+    // Liberar memoria de los productos de venta y la factura
+    if (ventaProductos != NULL) {
+        IIterator* it = ventaProductos->getIterator();
+        while (it->hasCurrent()) {
+            ICollectible* col = it->getCurrent();
+            this->ventaProductos->remove(col); // Liberar memoria del producto de venta
+            it->next();
+        }
+        delete it;
+        delete ventaProductos; // Liberar la colección de productos de venta
+    }
+    if (factura != NULL) {
+        delete factura; // Liberar la factura
+    }
 }
 
 // getters
@@ -74,8 +85,6 @@ void Venta::aumentarCantProducto(int idProducto, int cantidad) {
             int nuevaCantidad = vp->getCantidad() + cantidad;
             vp->setCantidad( nuevaCantidad );
             encontrado = true;
-            delete col;
-            delete vp;
             break;
         }
         it->next();
@@ -94,8 +103,6 @@ bool Venta::verificarVentasProducto(string verifiqueishon){
         ventaProducto* vp = dynamic_cast<ventaProducto*>(col);
         if (vp && vp->getProducto()->getCodigo() == atoi(verifiqueishon.c_str())) {
             delete it;
-            delete col;
-            delete vp;
             return true;
         }
         it->next();
@@ -121,27 +128,31 @@ void Venta::eliminarProducto(string producto,int cantidad){
     while (it->hasCurrent()) {
         ICollectible* col = it->getCurrent();
         ventaProducto* vp = dynamic_cast<ventaProducto*>(col);
-        if (vp && vp->getProducto()->getNombre() == producto) { //estaria mejor comparar por codigo
-            int nuevaCantidad = vp->getCantidad() - cantidad;
-            if (nuevaCantidad <= 0)
-                ventaProductos->remove(vp);
-            else {
-                vp->setCantidad(nuevaCantidad);
+        if (vp != NULL) {
+            Producto* p = vp->getProducto();
+            if (p != NULL && p->getNombre() == producto) {
+                int nuevaCantidad = vp->getCantidad() - cantidad;
+                if (nuevaCantidad <= 0)
+                    ventaProductos->remove(vp);
+                else
+                    vp->setCantidad(nuevaCantidad);
+                break;
             }
-            delete col;
-            delete vp;
-            break;
         }
+
         it->next();
     }
     delete it;
 }
 
 bool Venta::agregarProducto(ventaProducto* vp) {
-    if (vp == NULL) return false;
-    if (this->ventaProductos == NULL) {
-        this->ventaProductos = new List();
+    if (!vp || !vp->getProducto()) {
+        cout << "[ERROR] Intentando agregar ventaProducto nulo o con producto nulo" << endl;
+        return false;
     }
+    if (!this->ventaProductos)
+        this->ventaProductos = new List();
+
     this->ventaProductos->add(vp);
     return true;
 }

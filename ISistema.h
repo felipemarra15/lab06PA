@@ -17,11 +17,6 @@ using namespace std;
 class ISistema {
     public:
         ~ISistema();
-        virtual IDictionary* getCliente() = 0;
-        virtual IDictionary* getEmpleados() = 0;
-        virtual IDictionary* getMesas() = 0;
-        virtual IDictionary* getProductos() = 0;
-        virtual IDictionary* getVentas() = 0;
         virtual bool hayProductos() = 0;
         virtual int ingresarProductoComun(string codigo, string nombre, float precio) = 0;
         virtual void confirmarProducto() = 0;
@@ -48,7 +43,6 @@ class ISistema {
         virtual dtVenta* mostrarFactura(int idVenta, int idMozo) = 0;
         virtual bool ingresarVenta(int idMesa) = 0;
         virtual ICollection* mostrarProductosDisponibles() = 0;
-        //virtual void seleccionarProducto(int codigo,int cantidad) = 0;
         virtual void agregarProducto(int idMesa,int idProducto, int cantidad) = 0;
         virtual void agregarProductoDomicilio(ICollection* vp, int idVenta) = 0;
         virtual void aumentarCantProducto(int idMesa, int idProducto , int cantidad) = 0;
@@ -73,14 +67,17 @@ class ISistema {
         virtual Producto* buscarProducto(int codigo) = 0;
         virtual ICollection* listarVentas() = 0;
         virtual void solicitarConsultaFacturacionDia(fecha f) = 0;
-        virtual ICollection* obtenerDatosFacturacion() = 0;
-        virtual ICollection* obtenerDatosVentaDomicilio() = 0;
+        virtual ICollection* obtenerDatosFacturacion(fecha f) = 0;
+        virtual ICollection* obtenerDatosVentaDomicilio(fecha f) = 0;
         virtual void mostrarInforme(ICollection* ventas, float total) = 0;
         virtual void listarRepartidor() = 0;
         virtual bool existeCliente(const string& ciCliente) = 0; // Verifica si un cliente existe por su cédula
         virtual void mostrarInfoRepartidor(int idRepartidor) = 0;
         virtual ICollection* listarMozos() = 0;
         virtual ICollection* ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) = 0;
+        virtual bool esMesaEnVentaActiva(int idMesa) = 0; // Verifica si una mesa tiene una venta activa
+        virtual void retirarElemento(int idMesa, int codigoProducto, int cantidad) = 0;
+        // parte 12 la secuela
 };
 
 

@@ -1,4 +1,5 @@
 #include "dtVentaProducto.h"
+#include "../ICollection/interfaces/IIterator.h"
 
 // Constructor
 dtVentaProducto::dtVentaProducto(dtProducto *producto, int cantidad){
@@ -8,8 +9,11 @@ dtVentaProducto::dtVentaProducto(dtProducto *producto, int cantidad){
 
 // Destructor
 dtVentaProducto::~dtVentaProducto(){
-    std::cout << "Destructor de dtVentaProducto" << std::endl;
-    delete producto;
+    // Liberar memoria del producto si es necesario
+    if (producto != NULL) {
+        producto = NULL; // Asegurarse de que no apunte a memoria liberada
+        delete producto; // Asumiendo que el producto fue creado dinámicamente
+    }
 }
 
 // Getters

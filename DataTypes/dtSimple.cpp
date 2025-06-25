@@ -7,5 +7,6 @@ dtSimple::dtSimple(int codigo, string descripcion, float precio) : dtProducto(co
 
 // Destructor
 dtSimple::~dtSimple() {
-    cout << "Destructor de dtSimple" << endl;
+    // Destructor vacío, no hay recursos que liberar
+    // Si hubiera recursos dinámicos, se liberarían aquí
 }

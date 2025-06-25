@@ -9,8 +9,19 @@ Menu::Menu(int codigo, string descripcion, float precio, int descuento, IDiction
 
 //Destructor
 Menu::~Menu() {
-    cout << "Destructor de Menu" << endl;
-    delete cantidadSimple;
+    // Liberar memoria de los productos en cantidadSimple
+    IIterator* it = this->cantidadSimple->getIterator();
+    while (it->hasCurrent()) {
+        ICollectible* item = it->getCurrent();
+        CantidadSimple* simple = dynamic_cast<CantidadSimple*>(item);
+        if (simple) {
+            delete simple; // Liberar memoria del objeto CantidadSimple
+        }
+        delete item; // Liberar memoria del item
+        it->next();
+    }
+    delete it; // Liberar el iterador
+    delete this->cantidadSimple; // Liberar la colección de cantidadSimple
 }
 
 //Getters

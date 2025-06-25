@@ -19,6 +19,7 @@ Sistema::Sistema() {
     this->empleados = new OrderedDictionary();
     this->clientes = new OrderedDictionary();
     this->cantidadSimpleTemporal = new OrderedDictionary();
+
     idMozoSeleccionado = 0;
     idMesaSeleccionada = 0;
     idProductoSeleccionado = 0;
@@ -30,25 +31,87 @@ Sistema::Sistema() {
 
 // Destructor
 Sistema::~Sistema() {
-    
+    // Liberar memoria de los diccionarios y colecciones
+    IIterator* it = productos->getIterator();
+    IIterator* itMesas = mesas->getIterator();
+    IIterator* itVentas = ventas->getIterator();
+    IIterator* itVentasActivas = ventasActivas->getIterator();
+    IIterator* itEmpleados = empleados->getIterator();
+    IIterator* itClientes = clientes->getIterator();
+    IIterator* itCantidadSimpleTemporal = cantidadSimpleTemporal->getIterator();
+
+    while (it->hasCurrent()) {
+        ICollectible* col = it->getCurrent();
+        delete col; // Liberar memoria de cada producto
+        it->next();
+    }
+    delete it;
+
+    while (itMesas->hasCurrent()) {
+        ICollectible* col = itMesas->getCurrent();
+        delete col; // Liberar memoria de cada mesa
+        itMesas->next();
+    }
+    delete itMesas;
+
+    while (itVentas->hasCurrent()) {
+        ICollectible* col = itVentas->getCurrent();
+        delete col; // Liberar memoria de cada venta
+        itVentas->next();
+    }
+    delete itVentas;
+
+    while (itVentasActivas->hasCurrent()) {
+        ICollectible* col = itVentasActivas->getCurrent();
+        delete col; // Liberar memoria de cada venta activa
+        itVentasActivas->next();
+    }
+    delete itVentasActivas;
+
+    while (itEmpleados->hasCurrent()) {
+        ICollectible* col = itEmpleados->getCurrent();
+        delete col; // Liberar memoria de cada empleado
+        itEmpleados->next();
+    }
+    delete itEmpleados;
+
+    while (itClientes->hasCurrent()) {
+        ICollectible* col = itClientes->getCurrent();
+        delete col; // Liberar memoria de cada cliente
+        itClientes->next();
+    }
+    delete itClientes;
+
+    while (itCantidadSimpleTemporal->hasCurrent()) {
+        ICollectible* col = itCantidadSimpleTemporal->getCurrent();
+        delete col; // Liberar memoria de cada cantidad simple temporal
+        itCantidadSimpleTemporal->next();
+    }
+    delete itCantidadSimpleTemporal;
+
+    delete productos;
+    delete mesas;
+    delete ventas;
+    delete ventasActivas;
+    delete empleados;
+    delete clientes;
+    delete cantidadSimpleTemporal;
+
+    // Liberar memoria de productoComun y productoTemporal
+    delete productoComun;
+    delete productoTemporal;
+
+    // Liberar memoria de las instancias singleton
+    if (instance != NULL) {
+        delete instance;
+        instance = NULL;
+    }
 }
 
-IDictionary* Sistema::getCliente() {
-    return clientes;
-}
-
-IDictionary* Sistema::getEmpleados() {
-    return empleados;
-}
-
-IDictionary* Sistema::getProductos() {
-    return productos;
-}
-IDictionary* Sistema::getMesas() {
-    return mesas;
-}
-IDictionary* Sistema::getVentas() {
-    return ventas;
+static std::string toStr(int x) {
+  std::ostringstream oss;
+  oss << x;
+  return oss.str();
 }
 
 // Métodos de la clase Sistema
@@ -75,8 +138,7 @@ int Sistema::ingresarProductoComun(string codigo, string nombre, float precio) {
 
 void Sistema::confirmarProducto() {  // REVISAR
     if (productoComun == NULL) {
-        cout << "No hay un producto ingresado." << endl;
-        return;
+        throw invalid_argument("No hay un producto ingresado.");
     }
 
     // Convertir de dtSimple a Simple antes de agregar al diccionario
@@ -115,14 +177,12 @@ ICollection* Sistema::listarProductosComunes() {  // REVISAR
 void Sistema::agregarProductoAMenu(int codigo, int cantidad) { //A CHEQUEAR
     // Implementación de la lógica para agregar un producto al menú
     if (codigo <= 0 || cantidad <= 0) {
-        cout << "Código o cantidad inválidos." << endl;
-        return;
+        throw invalid_argument("Código o cantidad inválidos.");
     }
 
     // Verificar si el producto existe
     if (!productos->member(new Integer(codigo))) {
-        cout << "Producto no encontrado." << endl;
-        return;
+        throw invalid_argument("Producto no encontrado.");
     }
 
     Simple* producto = dynamic_cast<Simple*>(productos->find(new Integer(codigo)));
@@ -133,14 +193,12 @@ void Sistema::agregarProductoAMenu(int codigo, int cantidad) { //A CHEQUEAR
 void Sistema::confirmarMenu(int codigo) { //A CHEQUEAR
     // Implementación de la lógica para confirmar el menú
     if (cantidadSimpleTemporal->isEmpty() || codigo <= 0) {
-        cout << "Datos no validos" << endl;
-        return;
+        throw invalid_argument("No hay productos en el menú temporal o código inválido.");
     }
 
     // Verificar si el menú ya existe
     if (ventas->member(new Integer(codigo))) {
-        cout << "El producto ya existe." << endl;
-        return;
+        throw invalid_argument("El menú ya existe con ese código.");
     }
 
     // Crear un nuevo menú con los productos temporales
@@ -160,7 +218,6 @@ void Sistema::confirmarMenu(int codigo) { //A CHEQUEAR
         ventaProducto* vp = dynamic_cast<ventaProducto*>(it->getCurrent());
         if (vp != NULL) {
             cantidadSimpleTemporal->remove(new Integer(vp->getProducto()->getCodigo())); // Eliminar del diccionario temporal
-            delete vp; // Liberar memoria del objeto ventaProducto
         }
         it->next();
     }
@@ -171,7 +228,6 @@ void Sistema::cancelarMenu() {  // REVISAR
     while (it->hasCurrent()) {
         ventaProducto* vp = dynamic_cast<ventaProducto*>(it->getCurrent());
         cantidadSimpleTemporal->remove(new Integer(vp->getProducto()->getCodigo())); // Eliminar del diccionario temporal
-        delete vp;    // Borra solo el objeto ventaProducto, NO el producto base
         it->next();
     }
     delete it;
@@ -210,8 +266,7 @@ int Sistema::seleccionarProducto(string codigo) { //REVISAR
 
 void Sistema::eliminarProducto() { // REVISAR
     if(codigoProductoSeleccionado == 0) {
-        cout << "No se ha seleccionado ningún producto para eliminar." << endl;
-        return;
+        throw invalid_argument("No se ha seleccionado un producto para eliminar.");
     }
 
     // Verificar si el producto está en uso en alguna venta activa
@@ -226,12 +281,10 @@ void Sistema::eliminarProducto() { // REVISAR
             while (itVP->hasCurrent()) {
                 ventaProducto* vp = dynamic_cast<ventaProducto*>(itVP->getCurrent());
                 if (vp != NULL && vp->getProducto()->getCodigo() == codigoProductoSeleccionado) {
-                    cout << "El producto no puede ser eliminado porque está en uso en una venta activa." << endl;
                     delete key; // Liberar memoria del key
                     delete itVP; // Liberar memoria del iterador de productos en la venta
-                    //delete vp;
                     delete itVA; // Liberar memoria del iterador de ventas activas
-                    return;
+                    throw invalid_argument("El producto no puede ser eliminado porque está en uso en una venta activa.");
                 }
                 itVP->next();
             }
@@ -304,9 +357,10 @@ ICollection* Sistema::mostrarMesasAsignadasSinVenta() {
 
     while (it->hasCurrent()) {
         Mesa* mesa = dynamic_cast<Mesa*>(it->getCurrent());  // Obtener la mesa actual
-        if (mesa != NULL && mesa->getEstado() != Activa) {
+
+        if (mesa != NULL && mesa->getEstado() != Activa) 
             mesasSinVenta->add(new Integer(mesa->getidMesa()));  // Solo agregamos si no tiene venta activa
-        }
+        
         it->next();
     }
 
@@ -368,8 +422,7 @@ bool Sistema::seleccionarMesas(int idMesa) {
 
 void Sistema::mostrarMesasSeleccionadas() {
     if (mesasSeleccionadas == NULL || mesasSeleccionadas->isEmpty()) {
-        cout << "No hay mesas seleccionadas actualmente." << endl;
-        return;
+        throw invalid_argument("No hay mesas seleccionadas.");
     }
 
     cout << "Mesas seleccionadas:" << endl;
@@ -411,8 +464,7 @@ bool Sistema::sinVenta() {
 void Sistema::confirmarVenta(int idMozo) { // REVISAR
     // 1) Verifico que haya mesas seleccionadas
     if (mesasSeleccionadas->isEmpty()) {
-        cout << "No hay mesas seleccionadas para confirmar la venta." << endl;
-        return;
+        throw invalid_argument("No hay mesas seleccionadas para la venta.");
     }
 
     // 2) Creo la colección inicial de VentaProducto (vacía)
@@ -423,16 +475,12 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     int dia, mes, anio;
     char sep;
      cin >> dia >> sep >> mes >> sep >> anio;
-    dia = 10;
-    mes = 10;
-    anio = 2025;
+    //  dia = 12; mes = 10; anio = 2023; // Para pruebas, fecha fija
     fecha* f = new fecha(dia, mes, anio);
-
     cout << "Ingrese la hora de la venta (hh:mm): ";
     int hh, mm;
     cin >> hh >> sep >> mm;
-    hh = 12;
-    mm = 30;
+    // hh = 14; mm = 30; // Para pruebas, hora fija
     hora* h = new hora(hh, mm);
 
     // 4) Creo la factura
@@ -460,9 +508,8 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     }
     delete itE;
     if (!mozo) {
-        cout << "Mozo no encontrado.\n";
-        return;
-}
+        throw invalid_argument("Mozo con ID " + toStr(idMozo) + " no encontrado.");
+    }
 
     // 6) Creo la venta local con ID, descuento 0, lista vacía, factura y mesas
     Local* nuevaVenta = new Local(
@@ -500,7 +547,6 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
             Integer* key = new Integer(m->getidMesa());
             Mesa* mesaEnSistema = dynamic_cast<Mesa*>(mesas->find(key));
             delete key;
-
             if (mesaEnSistema) {
                 mesaEnSistema->setEstado(Activa);
                 mesaEnSistema->setLocal(nuevaVenta);
@@ -511,9 +557,16 @@ void Sistema::confirmarVenta(int idMozo) { // REVISAR
     delete itSel;
 
     // Limpiar la lista de mesas seleccionadas después de confirmar la venta
-    delete mesasSeleccionadas;
-    mesasSeleccionadas = new List(); // Reiniciar la colección de mesas seleccionadas
-
+    IIterator* itVieja = mesasSeleccionadas->getIterator();
+    while (itVieja->hasCurrent()) {
+        Mesa* m = dynamic_cast<Mesa*>(itVieja->getCurrent());
+        if (m) {
+            mesasSeleccionadas->remove(new Integer(m->getidMesa())); // Eliminar de la colección anterior
+        }
+        itVieja->next();
+    }
+    delete itVieja;
+    mesasSeleccionadas = new List(); // Reiniciar la lista de mesas seleccionadas
     
     cout << "Venta confirmada exitosamente." << endl;
 }
@@ -523,79 +576,111 @@ void Sistema::cancelarVenta() {
     cout << "Ingrese el ID de la venta que desea cancelar: ";
     cin >> idVenta;
 
-    // Buscar la venta en el diccionario
     IKey* key = new Integer(idVenta);
+
     if (!ventas->member(key)) {
         cout << "La venta con ID " << idVenta << " no existe." << endl;
         delete key;
-        //return;
+        return;
     }
 
     Venta* venta = dynamic_cast<Venta*>(ventas->find(key));
 
-    // Eliminar la venta del diccionario de ventas
+    // Si es una venta local, desasociar mesas
+    Local* local = dynamic_cast<Local*>(venta);
+    if (local) {
+        IIterator* itMesas = local->getMesa()->getIterator();
+        while (itMesas->hasCurrent()) {
+            Mesa* m = dynamic_cast<Mesa*>(itMesas->getCurrent());
+            if (m) {
+                m->setEstado(Finalizada); // Cambiar estado a Finalizada
+                m->setLocal(NULL);
+            }
+            itMesas->next();
+        }
+        delete itMesas;
+    }
+
+    // Eliminar la venta de 'ventas'
     ventas->remove(key);
 
-    // Eliminar de ventasActivas si está ahí
+    // También de ventasActivas si está
     IIterator* it = ventasActivas->getIterator();
     while (it->hasCurrent()) {
         Venta* v = dynamic_cast<Venta*>(it->getCurrent());
-        if (v->getIdVenta() == idVenta) {
-            ventasActivas->remove(new Integer(v->getIdVenta())); // Eliminar la venta activa
+        if (v && v->getIdVenta() == idVenta) {
+            ventasActivas->remove(new Integer(idVenta));
             break;
         }
         it->next();
     }
     delete it;
+
     delete venta;
     delete key;
 
     cout << "La venta ha sido cancelada exitosamente." << endl;
 }
 
+
 void Sistema::cancelarVentaActiva() {
-    // Descartamos cualquier venta en curso y limpiamos la selección de mesas
-    delete mesasSeleccionadas;
-    mesasSeleccionadas = new List();
-    cout << "Venta en curso cancelada.\nMesas seleccionadas limpias.\n";
+    IIterator* itVieja = mesasSeleccionadas->getIterator();
+    while (itVieja->hasCurrent()) {
+        Mesa* m = dynamic_cast<Mesa*>(itVieja->getCurrent());
+        if (m) {
+            mesasSeleccionadas->remove(m); // remueve el objeto, no una clave
+        }
+        itVieja->next();
+    }
+    delete itVieja;
+    delete mesasSeleccionadas; 
+    mesasSeleccionadas = new List(); // nueva lista vacía
 }
 
 int Sistema::finalizarVenta(int idMesa) {
-    // 1) Itero sobre ventas activas (que son Venta*, no Mesa*)
     IIterator* it = ventasActivas->getIterator();
+
     while (it->hasCurrent()) {
-        Venta* venta = dynamic_cast<Venta*>(it->getCurrent());
-        Local* local = dynamic_cast<Local*>(venta);
-        // local->getMesa() es un IDictionary* que mapea Integer->Mesa*
-        if (local != NULL && local->getMesa()->member(new Integer(idMesa))) {
-            // 2) Quito de activas
-            
-            // 3) Lo paso a histórico
-            ventas->add(new Integer(venta->getIdVenta()), dynamic_cast<ICollectible*>(venta));
-
-
-            // 4) Marco la mesa como libre
-            //    Recupero el objeto Mesa* desde el diccionario
+        Venta* vent = dynamic_cast<Venta*>(it->getCurrent());
+        Local* local = dynamic_cast<Local*>(vent);
+        
+        if (local != NULL) {
             Integer* keyMesa = new Integer(idMesa);
-            Mesa* mesa = dynamic_cast<Mesa*>( local->getMesa()->find(keyMesa) );
-            delete keyMesa;
-            if (mesa) {
-                mesa->setEstado(Finalizada);  // o el enum que uses para “libre”
+
+            if (local->getMesa()->member(keyMesa)) {
+                // 1) Eliminar de ventasActivas
+                IKey* keyVenta = new Integer(vent->getIdVenta());
+                ventasActivas->remove(keyVenta);
+                delete keyVenta; // Liberar memoria del key
+
+                // 2) Agregar a histórico
+                ventas->add(new Integer(vent->getIdVenta()), vent);
+
+                // 3) Marcar la mesa como libre
+                Mesa* mesa = dynamic_cast<Mesa*>(local->getMesa()->find(keyMesa));
+                if (mesa != NULL) {
+                    mesa->setEstado(Finalizada);
+                    mesa->setLocal(NULL);
+                }
+
+                int id = vent->getIdVenta();
+                delete keyMesa;
+                delete it;
+
+                return id;
             }
 
-            // 5) Guarda ID para mostrar factura luego
-            idVenta = venta->getIdVenta();
-
-            delete it;
-            return idVenta;
+            delete keyMesa;
         }
+
         it->next();
     }
+
     delete it;
-    // Si no encontró ninguna venta activa para esa mesa
     cout << "No hay venta activa para la mesa " << idMesa << ".\n";
     return -1;
 }
+
 
 ICollection* Sistema::mostrarVenta(int idMesa) {
     IIterator* it = ventasActivas->getIterator();
@@ -661,7 +746,7 @@ bool Sistema::ingresarVenta(int idMesa) {
     }
     delete it;
     if (!mesaEncontrada) 
-        cout << "No se encontró la mesa con ID: " << idMesa << endl;
+        throw invalid_argument("No hay venta activa para la mesa " + toStr(idMesa) + ".");
     return mesaEncontrada; // Retorna true si se encontró la mesa, false en caso contrario
 }
 
@@ -702,28 +787,7 @@ ICollection* Sistema::mostrarProductosDisponibles() {
     delete it;
     return resultado;
 }
-/*
-void Sistema::seleccionarProducto(string codigo, int cantidad) {
-    IIterator *it = productos->getIterator();
 
-    while (it->hasCurrent()) {
-        Producto *prod = dynamic_cast<Producto *>(it->getCurrent());
-        if (prod != NULL && prod->getCodigo() == atoi(codigo.c_str())){
-            idProductoSeleccionado = prod->getCodigo();
-            cantProductosSeleccionados = cantidad;
-            dtProducto* aux = new dtProducto(prod->getCodigo(), prod->getNombre(), prod->getPrecio());
-            if (productoTemporal != NULL) {
-                delete productoTemporal;
-                productoTemporal = NULL;
-            }
-            productoTemporal = new dtVentaProducto(aux, cantidad);
-            break;
-        } 
-        it->next();
-    }
-    delete it; // Liberar el iterador
-}
-*/
 void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
     // 1) Buscar el Producto en el diccionario
     Integer* claveProd = new Integer(idProducto);
@@ -731,8 +795,7 @@ void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
     delete claveProd;
 
     if (p == NULL) {
-        cout << "[ERROR] Producto con ID " << idProducto << " no encontrado." << endl;
-        return;  // Si no existe, salgo
+        throw invalid_argument("Producto con ID " + toStr(idProducto) + " no encontrado.");
     }
 
     cout << "Producto encontrado: " << p->getNombre() << endl;
@@ -747,14 +810,22 @@ void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
         if (venta != NULL && venta->esMesa(idMesa)) {
             // 3) Aquí tengo la Venta Local correcta
             Local* local = dynamic_cast<Local*>(venta);
-            if (local != NULL) {
+            if (local) {
                 cout << "Venta Local encontrada para la mesa: " << idMesa << endl;
 
                 // 4) Crear el ventaProducto (Producto* ya fue validado)
                 ventaProducto* vp = new ventaProducto(cantidad, p);
-
+                
                 // 5) Agregarlo a la colección de la venta
-                local->agregarProducto(vp);
+
+                ICollection * v = venta->getVentaProductos();
+                IIterator* itVt = v->getIterator();
+                while (itVt->hasCurrent()) {
+                    ventaProducto* vpExistente = dynamic_cast<ventaProducto*>(itVt->getCurrent());
+                    itVt->next();
+                }
+
+                cout << "Producto agregado a la venta." << endl;
 
                 // Debug: listar productos actuales
                 ICollection* productosVenta = local->getVentaProductos();
@@ -762,7 +833,6 @@ void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
                 while (itVP->hasCurrent()) {
                     ventaProducto* vpExistente = dynamic_cast<ventaProducto*>(itVP->getCurrent());
                     if (vpExistente && vpExistente->getProducto())
-                        cout << "[DEBUG] Producto en venta: " << vpExistente->getProducto()->getNombre() << endl;
                     itVP->next();
                 }
                 delete itVP;
@@ -772,8 +842,6 @@ void Sistema::agregarProducto(int idMesa, int idProducto, int cantidad) {
         }
         it->next();
     }
-
-    cout << "Producto agregado a la venta." << endl;
     delete it;
     codigoProductoSeleccionado = 0; // Reiniciar el código del producto seleccionado
 }
@@ -850,7 +918,6 @@ void Sistema::salir() {
         itV->next();
     }
     delete itV;
-    delete ventasActivas;
 
     // ... liberar mesas, clientes, mozos, etc.
 
@@ -896,8 +963,7 @@ void Sistema::mostrarConfirmacion() {
 
 void Sistema::ingresarMesa(int idMesa) {
     if (idMesa <= 0) {
-        cout << "ID de mesa inválido." << endl;
-        return;
+        throw invalid_argument("El ID de la mesa debe ser un número valido.");
     }
 
     // 1) Preparamos la clave para buscar
@@ -932,22 +998,19 @@ ICollection* Sistema::mostrarProductosEnVenta() {
         it->next();
     }
 
-    delete mesita; // Liberar memoria de la mesa
     delete it; // Liberar memoria del iterador de ventas
     return productosEnVenta; // Retornar la colección de productos en la venta
 }
 
 void Sistema::SeleccionarProductoYCantidad(string producto, int cantidad) { //REVISAR
     if(producto.empty() || cantidad <= 0) {
-        cout << "Datos del producto o cantidad inválidos." << endl;
-        return;
+        throw invalid_argument("Datos del producto inválidos. Asegúrese de ingresar un código de producto válido y una cantidad positiva.");
     }
     // Verificar si el producto existe
     IKey* key = new Integer(atoi(producto.c_str()));
     if (!productos->member(key)) {
-        cout << "El producto con código " << producto << " no existe." << endl;
         delete key; // Liberar memoria del key
-        return;
+        throw invalid_argument("Producto con código " + producto + " no encontrado.");
     }
     Producto* prod = dynamic_cast<Producto*>(productos->find(key));
     dtProducto* dtProd = new dtProducto(prod->getCodigo(), prod->getNombre(), prod->getPrecio());
@@ -958,8 +1021,7 @@ void Sistema::SeleccionarProductoYCantidad(string producto, int cantidad) { //RE
 
 void Sistema::EliminarProducto(int idVenta) { // REVISAR
     if(idVenta <= 0 || !ventasActivas->member(new Integer(idVenta)) || productoTemporal == NULL) {
-        cout << "Datos no Validos" << endl;
-        return;
+        throw invalid_argument("Datos inválidos. Asegúrese de ingresar un ID de venta válido y haber seleccionado un producto.");
     }
 
     // Buscar la venta activa
@@ -975,7 +1037,6 @@ void Sistema::EliminarProducto(int idVenta) { // REVISAR
                     if(vp->getCantidad() <= productoTemporal->getCantidad()) {
                         // Si la cantidad del producto en la venta es menor o igual a la cantidad temporal, eliminarlo
                         ventaProductos->remove(vp);
-                        delete vp; // Liberar memoria del producto eliminado
                         productoTemporal = NULL; // Liberar el producto temporal
                         cout << "Producto eliminado de la venta." << endl;
                     } else {
@@ -996,6 +1057,7 @@ void Sistema::EliminarProducto(int idVenta) { // REVISAR
 }
 
 void Sistema::cancelarAccion() { // REVISAR
+    delete productoTemporal;
     productoTemporal = NULL; // Liberar el producto temporal
     cout << "Acción cancelada." << endl;
 }
@@ -1026,8 +1088,7 @@ int Sistema::altaCliente(string ci, string nombre, string telefono, direccion* d
 
 void Sistema::altaMozo(string nombre){ //REVISAR
     if(nombre.empty()) {
-        cout << "Datos del mozo inválidos." << endl;
-        return;
+        throw invalid_argument("Nombre del mozo no puede estar vacío.");
     }
     
     int num = empleados->getSize()+1;
@@ -1039,8 +1100,7 @@ void Sistema::altaMozo(string nombre){ //REVISAR
 
 void Sistema::altaRepartidor(string nombre, string transporte){
     if(nombre.empty() || transporte.empty()) {
-        cout << "Datos del repartidor inválidos." << endl;
-        return;
+        throw invalid_argument("Nombre y transporte del repartidor no pueden estar vacíos.");
     }
 
     int num = empleados->getSize()+1;
@@ -1054,8 +1114,8 @@ dtProducto* Sistema::informacionProducto(int codigoProducto) {
     // 1) Busco en el diccionario
     ICollectible* col = productos->find(new Integer(codigoProducto));
     if (col == NULL) {
-        cout << "Error: Producto " << codigoProducto << " no encontrado." << endl;
-        return NULL;
+        cout << "Producto con código " << codigoProducto << " no encontrado." << endl;
+        return NULL;  // Retorno NULL si no se encuentra el producto
     }
     // 2) Convierto a dominio
     Producto* prod = dynamic_cast<Producto*>(col);
@@ -1070,8 +1130,7 @@ dtProducto* Sistema::informacionProducto(int codigoProducto) {
 void Sistema::asignarMesaAMozo() {
     // 1) Verificar que no haya ventas activas
     if (ventasActivas->getSize() > 0) {
-        cout << "No se puede asignar mesas: existen ventas sin facturar." << endl;
-        return;
+        throw invalid_argument("No se puede asignar mesas mientras hay ventas activas.");
     }
 
     // 2) Extraer solo los Mozo* en una lista temporal
@@ -1087,9 +1146,8 @@ void Sistema::asignarMesaAMozo() {
     int cantMozos = listaMozos->getSize();
     int cantMesas = mesas->getSize();
     if (cantMozos == 0 || cantMesas == 0) {
-        cout << "No hay mozos o mesas para asignar." << endl;
         delete listaMozos;
-        return;
+        throw invalid_argument("No hay mozos o mesas disponibles para asignar.");
     }
 
     // 3) Volcar mozos y mesas a arrays dinámicos
@@ -1320,16 +1378,14 @@ void Sistema::asignarMesaAMozo(int numeroMesa, int idMozo) {
     // 1) Recupero mesa
     ICollectible* colMe = mesas->find(new Integer(numeroMesa));
     if (colMe == NULL) {
-        cout << "Error: Mesa " << numeroMesa << " no existe." << endl;
-        return;
+        throw invalid_argument("Mesa " + toStr(numeroMesa) + " no existe.");
     }
     Mesa* mesa = dynamic_cast<Mesa*>(colMe);
 
     // 2) Recupero mozo
     ICollectible* colMo = empleados->find(new Integer(idMozo));
     if (colMo == NULL) {
-        cout << "Error: Mozo " << idMozo << " no existe." << endl;
-        return;
+        throw invalid_argument("Mozo con ID " + toStr(idMozo) + " no existe.");
     }
     Mozo* mozo = dynamic_cast<Mozo*>(colMo);
 
@@ -1385,7 +1441,7 @@ bool Sistema::productoEnVenta(int idProducto, int idMesa) {
 Producto* Sistema::buscarProducto(int codigo) {
     // 1) Construyo la clave
     Integer* key = new Integer(codigo);
-    // 2) Busco en el diccionario (devuelve ICollectible* o nullptr)
+    // 2) Busco en el diccionario (devuelve ICollectible* o NULL)
     ICollectible* col = productos->find(key);
     // 3) Ya no necesito la clave
     delete key;
@@ -1416,26 +1472,27 @@ void Sistema::solicitarConsultaFacturacionDia(fecha f) {
 
 
 
-ICollection* Sistema::obtenerDatosVentaDomicilio() {
+ICollection* Sistema::obtenerDatosVentaDomicilio(fecha f) {
     ICollection* ventasDelDia = new List();
     IIterator* it = ventas->getIterator();
 
     while (it->hasCurrent()) {
-        Venta* venta = dynamic_cast<Venta*>(it->getCurrent());
-        if (dynamic_cast<Domicilio*>(venta) != NULL) {
-            fecha* fechaVenta = venta->getFactura()->getFecha();
+        Domicilio* lol = dynamic_cast<Domicilio*>(it->getCurrent());
+        if (lol) {
+            fecha* fechaVenta = lol->getFactura()->getFecha();
+            if (fechaVenta->getDia() == f.getDia() &&
+                fechaVenta->getMes() == f.getMes() &&
+                fechaVenta->getAnio() == f.getAnio()) {
+                // Si la fecha de la venta coincide con la fecha buscada
+                ventasDelDia->add(lol); // Obtener el DTO de la factura
+                }
+            }
+            it->next();
+        }
 
-            if (fechaVenta->getDia() == fechaConsulta.getDia() &&
-                fechaVenta->getMes() == fechaConsulta.getMes() &&
-                fechaVenta->getAnio() == fechaConsulta.getAnio()) {
-
-                dtVenta* dto = new dtVenta(
-                    venta->getIdVenta(),
-                    venta->getDescuento(),
-                    venta->getVentaProductos(),
-                    venta->getFactura()
-                );
-                ventasDelDia->add(dto);
+    delete it;
+    return ventasDelDia;
+}
 
 void Sistema::listarRepartidor(){
     if(!empleados->isEmpty()){
@@ -1512,9 +1569,8 @@ ICollection* Sistema::ventasDeMozo(int idMozo, fecha* desde, fecha* hasta) {
         }
         it->next();
     }
-
     delete it;
-    return ventasDelDia;
+    return resultado;
 }
 
 
@@ -1525,7 +1581,6 @@ void Sistema::mostrarInforme(ICollection* ventas, float totalSistema) {
     while (it->hasCurrent()) {
         dtVenta* v = dynamic_cast<dtVenta*>(it->getCurrent());
         if (v == NULL) {
-            cout << "[ERROR] Objeto no es dtVenta*\n";
             it->next();
             continue;
         }
@@ -1541,64 +1596,25 @@ void Sistema::mostrarInforme(ICollection* ventas, float totalSistema) {
     }
     delete it;
 
-    cout << "\nTOTAL FACTURADO (con IVA): $" << fixed << setprecision(2) << totalSistema << endl;
+    cout << "\nTOTAL FACTURADO (con IVA): $" << totalSistema << endl;
 }
 
 
-ICollection* Sistema::obtenerDatosFacturacion() {
+ICollection* Sistema::obtenerDatosFacturacion(fecha f) {
     ICollection* ventasDelDia = new List();
     IIterator* it = ventas->getIterator();
 
-    // Contar manualmente cuántas ventas hay
-    int contadorVentas = 0;
-    IIterator* itVentas = ventas->getIterator();
-    while (itVentas->hasCurrent()) {
-        contadorVentas++;
-        itVentas->next();
-    }
-    delete itVentas;
-
-    cout << "[DEBUG] Cantidad total de ventas en el sistema: " << contadorVentas << endl;
-
     while (it->hasCurrent()) {
-        Venta* venta = dynamic_cast<Venta*>(it->getCurrent());
-        cout << "[DEBUG] Analizando venta ID: " << venta->getIdVenta() << endl;
-
-        if (dynamic_cast<Local*>(venta) == NULL) {
-            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " no es de tipo Local. Se ignora." << endl;
-            it->next();
-            continue;
+        Local* lol = dynamic_cast<Local*>(it->getCurrent());
+        if (lol) {
+            fecha* fechaVenta = lol->getFactura()->getFecha();
+            if (fechaVenta->getDia() == f.getDia() &&
+                fechaVenta->getMes() == f.getMes() &&
+                fechaVenta->getAnio() == f.getAnio()) {
+                // Si la fecha de la venta coincide con la fecha buscada
+                ventasDelDia->add(lol); // Obtener el DTO de la factura
+            }
         }
-
-        if (venta->getFactura() == NULL) {
-            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " no tiene factura. Se ignora." << endl;
-            it->next();
-            continue;
-        }
-
-        fecha* fechaVenta = venta->getFactura()->getFecha();
-
-        cout << "[DEBUG] Fecha de venta ID " << venta->getIdVenta()
-             << ": " << fechaVenta->getDia() << "/" << fechaVenta->getMes() << "/" << fechaVenta->getAnio() << endl;
-
-        cout << "[DEBUG] Comparando con fecha buscada: "
-             << fechaConsulta.getDia() << "/" << fechaConsulta.getMes() << "/" << fechaConsulta.getAnio() << endl;
-
-        if (fechaVenta->getDia() == fechaConsulta.getDia() &&
-            fechaVenta->getMes() == fechaConsulta.getMes() &&
-            fechaVenta->getAnio() == fechaConsulta.getAnio()) {
-
-            cout << "[DEBUG] Venta ID " << venta->getIdVenta() << " coincide con la fecha buscada, se agrega al informe." << endl;
-
-            dtVenta* dto = new dtVenta(
-                venta->getIdVenta(),
-                venta->getDescuento(),
-                venta->getVentaProductos(),
-                venta->getFactura()
-            );
-            ventasDelDia->add(dto);
-        }
-
         it->next();
     }
 
@@ -1606,7 +1622,57 @@ ICollection* Sistema::obtenerDatosFacturacion() {
     return ventasDelDia;
 }
 
+bool Sistema::esMesaEnVentaActiva(int idMesa){
+    Mesa* m = dynamic_cast<Mesa*>(mesas->find(new Integer(idMesa)));
+    if (m == NULL)
+        return false; // Mesa no encontrada
+    return true;
+}
 
+void Sistema::retirarElemento(int idMesa, int codigoProducto, int cantidad) {
+    // 1) Validaciones iniciales
+    IKey* kMesa = new Integer(idMesa);
+    Mesa* mesa = dynamic_cast<Mesa*>(mesas->find(kMesa));
+    delete kMesa;
+    if (!mesa) return;
 
-// Implementación de los métodos de la clase Sistema
-// Aquí se pueden agregar más métodos según sea necesario
+    Local* venta = mesa->getLocal();
+    if (!venta) {
+        throw invalid_argument("La mesa no tiene una venta activa.");
+    }
+
+    // 2) ¡Aquí va el cambio clave!
+
+    ICollection* vpList = venta->getVentaProductos();
+    if (!vpList) {
+        throw invalid_argument("La venta no tiene productos asociados.");
+    }
+
+    IIterator* debugIt = vpList->getIterator();
+    int index = 0;
+
+    IIterator* it = vpList->getIterator();
+    while (it->hasCurrent()) {
+        ICollectible* current = it->getCurrent();
+        ventaProducto* linea = dynamic_cast<ventaProducto*>(current);
+
+        Producto* prod = linea->getProducto();
+
+        if (prod->getCodigo() == codigoProducto) {
+            cout << "Producto encontrado: " << prod->getNombre() << endl;
+            int actual = linea->getCantidad();
+            it->next();  // avanzamos antes de modificar la lista
+
+            if (actual <= cantidad) {
+                vpList->remove(linea);
+                cout << "Producto removido completamente." << endl;
+            } else {
+                linea->setCantidad(actual - cantidad);
+                cout << "Cantidad reducida a " << (actual - cantidad) << endl;
+            }
+            break;
+        }
+        it->next();
+    }
+    delete it;
+}

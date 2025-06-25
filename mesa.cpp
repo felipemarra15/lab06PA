@@ -15,7 +15,12 @@ Mesa::Mesa(int idMesa){
 // destructor
 
 Mesa::~Mesa(){
-    cout << "Destructor de Mesa" << endl;
+    // Si la mesa está asignada a un local, se desvincula
+    if (this->local != NULL) {
+        this->local->getMesa()->remove(new Integer(this->idMesa)); // Remover la mesa del local
+        this->local = NULL; // Desvincular la mesa del local
+        delete this->local; // Liberar memoria del local
+    }
 }
 
 // getters

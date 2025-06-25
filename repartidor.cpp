@@ -11,7 +11,8 @@ Repartidor::Repartidor(int numero, string nombre, string transporte) : Empleado(
 
 //Destructor
 Repartidor::~Repartidor(){
-    cout << "Repartidor eliminado" << endl;
+    // Destructor vacío, no hay recursos que liberar
+    // Si hubiera recursos dinámicos, se liberarían aquí
 }
 
 //Getters
