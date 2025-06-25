@@ -564,14 +564,10 @@ void orden(ISistema* sis, int opcion) {
                     cin >> conf;
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
+                    cout << idMesa << endl;
+
                     if (conf == 1) {
-                        // sin parámetros: usa lo que guardó seleccionarProductoYCantidad()
-                        sis->eliminarProducto();
-                        cout << ">> Producto eliminado de la venta.\n";
-                    } else {
-                        sis->cancelarAccion();
-                        cout << ">> Operación cancelada para este producto.\n";
-                    }
+                        sis->   (idMesa);
 
                     // ¿otra vez?
                     cout << "¿Quitar otro producto? (1=Sí, 0=No): ";
